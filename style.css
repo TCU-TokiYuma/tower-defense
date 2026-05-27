@@ -80,6 +80,20 @@ button {
   white-space: nowrap;
 }
 
+.screen-pill {
+  max-width: 76px;
+  padding: 3px 7px;
+  overflow: hidden;
+  background: rgba(86, 214, 232, 0.12);
+  border: 1px solid rgba(86, 214, 232, 0.34);
+  border-radius: 999px;
+  color: var(--cyan);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  text-overflow: ellipsis;
+}
+
 .brand-mark {
   width: 18px;
   height: 18px;
@@ -148,6 +162,26 @@ button {
 .enemy-layer {
   position: absolute;
   inset: 0;
+}
+
+.stage-info {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+  min-height: 24px;
+  padding: 5px 8px;
+  overflow: hidden;
+  background: rgba(13, 15, 14, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .enemy {
@@ -552,7 +586,14 @@ button {
   }
 
   .brand {
-    font-size: 0.78rem;
+    gap: 5px;
+    font-size: 0.72rem;
+  }
+
+  .screen-pill {
+    max-width: 58px;
+    padding-inline: 5px;
+    font-size: 0.58rem;
   }
 
   .status-grid {

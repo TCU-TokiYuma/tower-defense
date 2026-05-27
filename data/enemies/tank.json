@@ -1,0 +1,14 @@
+{
+  "id": "tank",
+  "name": "重装体",
+  "asset": "assets/enemy.svg",
+  "baseSpeed": 8,
+  "baseHealth": 9,
+  "healthPerLevel": 1.8,
+  "baseAttack": 18,
+  "attackPerLevel": 2.2,
+  "speedPerLevel": 0.08,
+  "score": 180,
+  "spawnWeight": 14,
+  "minStage": 3
+}

@@ -1,0 +1,14 @@
+{
+  "id": "basic",
+  "name": "侵入体",
+  "asset": "assets/enemy.svg",
+  "baseSpeed": 13,
+  "baseHealth": 4.8,
+  "healthPerLevel": 0.9,
+  "baseAttack": 8,
+  "attackPerLevel": 1.1,
+  "speedPerLevel": 0.18,
+  "score": 100,
+  "spawnWeight": 70,
+  "minStage": 1
+}

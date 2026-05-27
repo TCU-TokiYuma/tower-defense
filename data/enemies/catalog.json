@@ -1,0 +1,7 @@
+{
+  "files": [
+    "data/enemies/basic.json",
+    "data/enemies/fast.json",
+    "data/enemies/tank.json"
+  ]
+}

@@ -11,7 +11,7 @@ const ASSETS = {
 
 const PIECE_ORDER = ["empty", "slash", "backslash", "turn"];
 const PIECE_META = {
-  empty: { label: "消去", countLabel: "FREE" },
+  empty: { label: "消去", countLabel: "無限" },
   slash: { label: "右上反射" },
   backslash: { label: "左上反射" },
   turn: { label: "時計回り屈折" },
@@ -19,6 +19,76 @@ const PIECE_META = {
 const LASER_SHIFT_MIN_SECONDS = 20;
 const LASER_SHIFT_MAX_SECONDS = 35;
 const PIECE_DROP_CHANCE = 0.36;
+const INITIAL_HEALTH = 100;
+const BASE_STAGE_ENEMY_COUNT = 8;
+const ENEMIES_PER_STAGE = 3;
+const BASE_SPAWN_INTERVAL = 1.15;
+const MIN_SPAWN_INTERVAL = 0.38;
+
+const SCREENS = {
+  START: "start",
+  PLAY: "play",
+  LEVEL_UP: "levelup",
+  RESULT: "result",
+};
+
+const SCREEN_LABELS = {
+  [SCREENS.START]: "スタート",
+  [SCREENS.PLAY]: "プレイ",
+  [SCREENS.LEVEL_UP]: "レベルアップ",
+  [SCREENS.RESULT]: "リザルト",
+};
+
+const ENEMY_DATA_FILES = [
+  "data/enemies/basic.json",
+  "data/enemies/fast.json",
+  "data/enemies/tank.json",
+];
+
+const ENEMY_FALLBACK = [
+  {
+    id: "basic",
+    name: "侵入体",
+    asset: "assets/enemy.svg",
+    baseSpeed: 13,
+    baseHealth: 4.8,
+    healthPerLevel: 0.9,
+    baseAttack: 8,
+    attackPerLevel: 1.1,
+    speedPerLevel: 0.18,
+    score: 100,
+    spawnWeight: 70,
+    minStage: 1,
+  },
+  {
+    id: "fast",
+    name: "突撃体",
+    asset: "assets/enemy.svg",
+    baseSpeed: 18,
+    baseHealth: 3.6,
+    healthPerLevel: 0.65,
+    baseAttack: 6,
+    attackPerLevel: 0.85,
+    speedPerLevel: 0.24,
+    score: 120,
+    spawnWeight: 26,
+    minStage: 2,
+  },
+  {
+    id: "tank",
+    name: "重装体",
+    asset: "assets/enemy.svg",
+    baseSpeed: 8,
+    baseHealth: 9,
+    healthPerLevel: 1.8,
+    baseAttack: 18,
+    attackPerLevel: 2.2,
+    speedPerLevel: 0.08,
+    score: 180,
+    spawnWeight: 14,
+    minStage: 3,
+  },
+];
 
 const DIR_DELTA = {
   up: { dx: 0, dy: -1 },
@@ -51,7 +121,7 @@ const REFLECT = {
 const UPGRADE_POOL = [
   {
     id: "damage",
-    icon: "ATK",
+    icon: "攻",
     name: "高出力レンズ",
     detail: "レーザー威力 +25%",
     apply: (state) => {
@@ -60,16 +130,17 @@ const UPGRADE_POOL = [
   },
   {
     id: "shield",
-    icon: "HP",
-    name: "予備コア",
-    detail: "耐久値 +1",
+    icon: "体",
+    name: "防壁補強",
+    detail: "最大体力 +15、体力 +15",
     apply: (state) => {
-      state.hp += 1;
+      state.maxHealth += 15;
+      state.health = Math.min(state.maxHealth, state.health + 15);
     },
   },
   {
     id: "slow",
-    icon: "SPD",
+    icon: "遅",
     name: "粘性フィールド",
     detail: "敵の降下速度 -8%",
     apply: (state) => {
@@ -78,7 +149,7 @@ const UPGRADE_POOL = [
   },
   {
     id: "score",
-    icon: "PTS",
+    icon: "点",
     name: "解析報酬",
     detail: "撃破スコア +20%",
     apply: (state) => {
@@ -87,7 +158,7 @@ const UPGRADE_POOL = [
   },
   {
     id: "pierce",
-    icon: "PEN",
+    icon: "貫",
     name: "連鎖照射",
     detail: "同じ列の次の敵にも 35% ダメージ",
     apply: (state) => {
@@ -100,6 +171,7 @@ const elements = {
   shell: document.getElementById("gameShell"),
   playArea: document.getElementById("playArea"),
   field: document.getElementById("field"),
+  stagePlanText: document.getElementById("stagePlanText"),
   board: document.getElementById("board"),
   emitterRow: document.getElementById("emitterRow"),
   enemyLayer: document.getElementById("enemyLayer"),
@@ -107,39 +179,43 @@ const elements = {
   laserLine: document.getElementById("laserLine"),
   pieceBag: document.getElementById("pieceBag"),
   pauseButton: document.getElementById("pauseButton"),
+  startOverlay: document.getElementById("startOverlay"),
+  startButton: document.getElementById("startButton"),
   upgradeOverlay: document.getElementById("upgradeOverlay"),
   upgradeOptions: document.getElementById("upgradeOptions"),
   gameOverOverlay: document.getElementById("gameOverOverlay"),
   restartButton: document.getElementById("restartButton"),
   resultText: document.getElementById("resultText"),
-  waveText: document.getElementById("waveText"),
+  screenText: document.getElementById("screenText"),
+  stageText: document.getElementById("stageText"),
   scoreText: document.getElementById("scoreText"),
-  hpText: document.getElementById("hpText"),
+  healthText: document.getElementById("healthText"),
   laserTimerText: document.getElementById("laserTimerText"),
 };
 
 const state = {
+  screen: SCREENS.START,
   board: Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill("empty")),
   cells: [],
   emitters: [],
   enemies: [],
+  enemyCatalog: ENEMY_FALLBACK.map(normalizeEnemyDef),
   bag: createInitialBag(),
   dragging: null,
   laserColumn: 2,
   activeColumn: 2,
   laserShiftTimer: randomLaserInterval(),
-  wave: 1,
+  stage: 1,
+  stagePlan: null,
+  spawnQueue: [],
   score: 0,
-  hp: 5,
-  running: true,
+  health: INITIAL_HEALTH,
+  maxHealth: INITIAL_HEALTH,
   paused: false,
-  upgradeOpen: false,
-  gameOver: false,
   lastTime: performance.now(),
   enemyId: 0,
   spawnTimer: 0,
-  spawnedThisWave: 0,
-  waveSize: 8,
+  spawnedThisStage: 0,
   hitEnemyId: null,
   stats: {
     damage: 2.8,
@@ -153,11 +229,15 @@ function setup() {
   buildBoard();
   buildEmitters();
   bindControls();
+  setScreen(SCREENS.START);
   updateHud();
   renderBoard();
   renderEmitters();
   renderPieceBag();
   requestAnimationFrame(loop);
+  loadEnemyCatalog().then((catalog) => {
+    state.enemyCatalog = catalog;
+  });
 }
 
 function buildBoard() {
@@ -194,18 +274,37 @@ function buildEmitters() {
 }
 
 function bindControls() {
+  elements.startButton.addEventListener("click", startGame);
+
   elements.pauseButton.addEventListener("click", () => {
-    if (state.upgradeOpen || state.gameOver) return;
+    if (state.screen !== SCREENS.PLAY) return;
     state.paused = !state.paused;
-    elements.pauseButton.textContent = state.paused ? "RESUME" : "PAUSE";
+    elements.pauseButton.textContent = state.paused ? "再開" : "一時停止";
   });
 
-  elements.restartButton.addEventListener("click", resetGame);
+  elements.restartButton.addEventListener("click", startGame);
 
   window.addEventListener("pointermove", handleDragMove, { passive: false });
   window.addEventListener("pointerup", handleDragEnd);
   window.addEventListener("pointercancel", handleDragCancel);
   window.addEventListener("resize", drawLaser);
+}
+
+function setScreen(nextScreen) {
+  state.screen = nextScreen;
+  elements.shell.dataset.screen = nextScreen;
+  elements.screenText.textContent = SCREEN_LABELS[nextScreen];
+  elements.startOverlay.classList.toggle("is-hidden", nextScreen !== SCREENS.START);
+  elements.upgradeOverlay.classList.toggle("is-hidden", nextScreen !== SCREENS.LEVEL_UP);
+  elements.gameOverOverlay.classList.toggle("is-hidden", nextScreen !== SCREENS.RESULT);
+}
+
+function startGame() {
+  resetGameState();
+  beginStage(1);
+  setScreen(SCREENS.PLAY);
+  updateHud();
+  drawLaser();
 }
 
 function renderPieceBag() {
@@ -230,7 +329,7 @@ function renderPieceBag() {
 }
 
 function startPieceDrag(event, piece) {
-  if (state.upgradeOpen || state.gameOver || !canUsePiece(piece)) return;
+  if (state.screen !== SCREENS.PLAY || state.paused || !canUsePiece(piece)) return;
 
   event.preventDefault();
   clearDragState();
@@ -387,7 +486,7 @@ function loop(now) {
   const dt = Math.min((now - state.lastTime) / 1000, 0.05);
   state.lastTime = now;
 
-  if (state.running && !state.paused && !state.upgradeOpen && !state.gameOver) {
+  if (state.screen === SCREENS.PLAY && !state.paused) {
     updateGame(dt);
   }
 
@@ -401,8 +500,17 @@ function updateGame(dt) {
   moveEnemies(dt);
   updateLaserShift(dt);
   damageEnemies(dt);
-  resolveWave();
+  resolveStage();
   updateHud();
+}
+
+function beginStage(stageNumber) {
+  state.stage = stageNumber;
+  state.stagePlan = createStagePlan(stageNumber);
+  state.spawnQueue = createSpawnQueue(state.stagePlan);
+  state.spawnedThisStage = 0;
+  state.spawnTimer = 0.45;
+  updateStagePlanView();
 }
 
 function updateLaserShift(dt) {
@@ -416,25 +524,32 @@ function updateLaserShift(dt) {
 }
 
 function spawnEnemies(dt) {
-  if (state.spawnedThisWave >= state.waveSize) return;
+  if (state.spawnQueue.length === 0) return;
 
-  const spawnInterval = Math.max(0.42, 1.15 - state.wave * 0.035);
+  const spawnInterval = Math.max(MIN_SPAWN_INTERVAL, BASE_SPAWN_INTERVAL - state.stage * 0.035);
   state.spawnTimer -= dt;
   if (state.spawnTimer > 0) return;
 
   const lane = Math.floor(Math.random() * BOARD_SIZE);
-  const baseHp = 4 + state.wave * 0.8;
+  const enemyDef = findEnemyDefinition(state.spawnQueue.shift());
+  const enemyStats = calculateEnemyStats(enemyDef, state.stagePlan.level);
   state.enemies.push({
     id: state.enemyId,
+    type: enemyDef.id,
+    name: enemyDef.name,
+    asset: enemyDef.asset,
     lane,
     y: -8,
-    hp: baseHp,
-    maxHp: baseHp,
-    speed: (13 + state.wave * 0.8) * state.stats.enemySpeedFactor,
+    hp: enemyStats.health,
+    maxHp: enemyStats.health,
+    speed: enemyStats.speed,
+    attack: enemyStats.attack,
+    score: enemyDef.score,
+    level: state.stagePlan.level,
   });
 
   state.enemyId += 1;
-  state.spawnedThisWave += 1;
+  state.spawnedThisStage += 1;
   state.spawnTimer = spawnInterval;
 }
 
@@ -446,14 +561,14 @@ function moveEnemies(dt) {
   const survivors = [];
   for (const enemy of state.enemies) {
     if (enemy.y >= 101) {
-      state.hp -= 1;
+      state.health = Math.max(0, state.health - enemy.attack);
       continue;
     }
     survivors.push(enemy);
   }
   state.enemies = survivors;
 
-  if (state.hp <= 0) {
+  if (state.health <= 0) {
     endGame();
   }
 }
@@ -483,7 +598,8 @@ function damageEnemies(dt) {
   if (defeated.length === 0) return;
 
   state.enemies = state.enemies.filter((enemy) => enemy.hp > 0);
-  state.score += Math.round(defeated.length * 100 * state.wave * state.stats.scoreFactor);
+  const defeatedScore = defeated.reduce((total, enemy) => total + enemy.score, 0);
+  state.score += Math.round(defeatedScore * state.stage * state.stats.scoreFactor);
   grantPieceRewards(defeated.length);
 }
 
@@ -502,8 +618,8 @@ function grantPieceRewards(defeatedCount) {
   }
 }
 
-function resolveWave() {
-  if (state.spawnedThisWave < state.waveSize || state.enemies.length > 0 || state.gameOver) {
+function resolveStage() {
+  if (state.spawnQueue.length > 0 || state.enemies.length > 0 || state.screen !== SCREENS.PLAY) {
     return;
   }
   openUpgrade();
@@ -613,8 +729,8 @@ function renderEnemies() {
       const left = laneWidth * (enemy.lane + 0.5);
       const hitClass = enemy.id === state.hitEnemyId ? " is-hit" : "";
       return `
-        <div class="enemy${hitClass}" style="left:${left}px; top:${enemy.y}%">
-          <img src="${ASSETS.enemy}" alt="">
+        <div class="enemy${hitClass}" style="left:${left}px; top:${enemy.y}%" title="${enemy.name} 攻撃力:${enemy.attack}">
+          <img src="${enemy.asset}" alt="">
           <div class="hp-bar"><span style="width:${hpRatio * 100}%"></span></div>
         </div>
       `;
@@ -625,7 +741,7 @@ function renderEnemies() {
 }
 
 function openUpgrade() {
-  state.upgradeOpen = true;
+  setScreen(SCREENS.LEVEL_UP);
   elements.upgradeOptions.innerHTML = "";
 
   const options = shuffle([...UPGRADE_POOL]).slice(0, 3);
@@ -642,34 +758,28 @@ function openUpgrade() {
     `;
     button.addEventListener("click", () => {
       upgrade.apply(state);
-      startNextWave();
+      startNextStage();
     });
     elements.upgradeOptions.appendChild(button);
   }
 
-  elements.upgradeOverlay.classList.remove("is-hidden");
+  updateHud();
 }
 
-function startNextWave() {
-  state.wave += 1;
-  state.spawnedThisWave = 0;
-  state.waveSize = 8 + state.wave * 3;
-  state.spawnTimer = 0.45;
-  state.upgradeOpen = false;
-  elements.upgradeOverlay.classList.add("is-hidden");
+function startNextStage() {
+  beginStage(state.stage + 1);
+  setScreen(SCREENS.PLAY);
   updateHud();
 }
 
 function endGame() {
-  state.gameOver = true;
-  state.running = false;
-  state.hp = 0;
-  elements.resultText.textContent = `WAVE ${state.wave} / SCORE ${state.score}`;
-  elements.gameOverOverlay.classList.remove("is-hidden");
+  state.health = 0;
+  elements.resultText.textContent = `到達面: ${state.stage} / 得点: ${state.score}`;
+  setScreen(SCREENS.RESULT);
   updateHud();
 }
 
-function resetGame() {
+function resetGameState() {
   state.board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill("empty"));
   state.bag = createInitialBag();
   clearDragState();
@@ -677,17 +787,16 @@ function resetGame() {
   state.laserColumn = 2;
   state.activeColumn = 2;
   state.laserShiftTimer = randomLaserInterval();
-  state.wave = 1;
+  state.stage = 1;
+  state.stagePlan = null;
+  state.spawnQueue = [];
   state.score = 0;
-  state.hp = 5;
-  state.running = true;
+  state.health = INITIAL_HEALTH;
+  state.maxHealth = INITIAL_HEALTH;
   state.paused = false;
-  state.upgradeOpen = false;
-  state.gameOver = false;
   state.enemyId = 0;
   state.spawnTimer = 0;
-  state.spawnedThisWave = 0;
-  state.waveSize = 8;
+  state.spawnedThisStage = 0;
   state.hitEnemyId = null;
   state.stats = {
     damage: 2.8,
@@ -696,21 +805,132 @@ function resetGame() {
     pierce: 0,
   };
 
-  elements.pauseButton.textContent = "PAUSE";
-  elements.upgradeOverlay.classList.add("is-hidden");
-  elements.gameOverOverlay.classList.add("is-hidden");
+  elements.pauseButton.textContent = "一時停止";
 
   renderBoard();
   renderEmitters();
   renderPieceBag();
+  updateStagePlanView();
   updateHud();
 }
 
 function updateHud() {
-  elements.waveText.textContent = String(state.wave);
+  elements.stageText.textContent = String(state.stage);
   elements.scoreText.textContent = String(state.score);
-  elements.hpText.textContent = String(Math.max(0, state.hp));
+  elements.healthText.textContent = `${Math.ceil(Math.max(0, state.health))}/${state.maxHealth}`;
   elements.laserTimerText.textContent = `${Math.ceil(Math.max(0, state.laserShiftTimer))}s`;
+}
+
+function updateStagePlanView() {
+  if (!state.stagePlan) {
+    elements.stagePlanText.textContent = "出現予定: --";
+    return;
+  }
+
+  const enemySummary = state.stagePlan.enemies
+    .map((entry) => `${findEnemyDefinition(entry.enemyId).name} x${entry.count}`)
+    .join(" / ");
+  elements.stagePlanText.textContent = `第${state.stagePlan.stageNumber}面 出現予定: ${enemySummary}`;
+}
+
+async function loadEnemyCatalog() {
+  if (window.location.protocol === "file:") {
+    return ENEMY_FALLBACK.map(normalizeEnemyDef);
+  }
+
+  try {
+    const catalogResponse = await fetch(assetUrl("data/enemies/catalog.json"), { cache: "no-store" });
+    if (!catalogResponse.ok) throw new Error(`catalog ${catalogResponse.status}`);
+
+    const catalog = await catalogResponse.json();
+    const files = Array.isArray(catalog.files) ? catalog.files : ENEMY_DATA_FILES;
+    const definitions = await Promise.all(
+      files.map(async (file) => {
+        const response = await fetch(assetUrl(file), { cache: "no-store" });
+        if (!response.ok) throw new Error(`${file} ${response.status}`);
+        return response.json();
+      }),
+    );
+
+    return definitions.map(normalizeEnemyDef);
+  } catch (error) {
+    console.warn("敵JSONの読み込みに失敗したため、内蔵定義で起動します。", error);
+    return ENEMY_FALLBACK.map(normalizeEnemyDef);
+  }
+}
+
+function normalizeEnemyDef(definition) {
+  return {
+    id: String(definition.id ?? "unknown"),
+    name: String(definition.name ?? "敵"),
+    asset: assetUrl(definition.asset ?? "assets/enemy.svg"),
+    speed: Number(definition.baseSpeed ?? definition.speed ?? 12),
+    speedPerLevel: Number(definition.speedPerLevel ?? 0),
+    health: Number(definition.baseHealth ?? definition.health ?? 4),
+    healthPerLevel: Number(definition.healthPerLevel ?? 0),
+    attack: Number(definition.baseAttack ?? definition.attack ?? 8),
+    attackPerLevel: Number(definition.attackPerLevel ?? 0),
+    score: Number(definition.score ?? 100),
+    spawnWeight: Number(definition.spawnWeight ?? 10),
+    minStage: Number(definition.minStage ?? definition.minWave ?? 1),
+  };
+}
+
+function createStagePlan(stageNumber) {
+  const candidates = state.enemyCatalog.filter((enemy) => enemy.minStage <= stageNumber);
+  const pool = candidates.length > 0 ? candidates : state.enemyCatalog;
+  const totalCount = BASE_STAGE_ENEMY_COUNT + (stageNumber - 1) * ENEMIES_PER_STAGE;
+  const countMap = new Map();
+
+  for (let i = 0; i < totalCount; i += 1) {
+    const enemy = pickWeightedEnemy(pool);
+    countMap.set(enemy.id, (countMap.get(enemy.id) ?? 0) + 1);
+  }
+
+  return {
+    stageNumber,
+    level: stageNumber,
+    totalCount,
+    enemies: Array.from(countMap, ([enemyId, count]) => ({ enemyId, count })),
+  };
+}
+
+function createSpawnQueue(stagePlan) {
+  const queue = [];
+  for (const entry of stagePlan.enemies) {
+    for (let i = 0; i < entry.count; i += 1) {
+      queue.push(entry.enemyId);
+    }
+  }
+  return shuffle(queue);
+}
+
+function calculateEnemyStats(enemyDef, level) {
+  const adjustmentLevel = Math.max(0, level - 1);
+
+  return {
+    health: enemyDef.health + enemyDef.healthPerLevel * adjustmentLevel,
+    attack: Math.round(enemyDef.attack + enemyDef.attackPerLevel * adjustmentLevel),
+    speed: (enemyDef.speed + enemyDef.speedPerLevel * adjustmentLevel) * state.stats.enemySpeedFactor,
+  };
+}
+
+function findEnemyDefinition(enemyId) {
+  return state.enemyCatalog.find((enemy) => enemy.id === enemyId) ?? state.enemyCatalog[0];
+}
+
+function pickWeightedEnemy(pool) {
+  const totalWeight = pool.reduce((total, enemy) => total + Math.max(0, enemy.spawnWeight), 0);
+  let cursor = Math.random() * totalWeight;
+
+  for (const enemy of pool) {
+    cursor -= Math.max(0, enemy.spawnWeight);
+    if (cursor <= 0) {
+      return enemy;
+    }
+  }
+
+  return pool[0];
 }
 
 function shuffle(items) {
