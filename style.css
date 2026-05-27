@@ -12,24 +12,10 @@
   --cyan: #56d6e8;
   --violet: #8d7cff;
   --danger: #f06464;
-  --cell-gap: 6px;
-  --hud-h: 64px;
-  --footer-safe: max(10px, env(safe-area-inset-bottom));
-  --footer-h: calc(72px + var(--footer-safe));
-  --health-h: 34px;
-  --emitter-h: 32px;
-  --panel-gap: 8px;
-  --panel-pad-block: 18px;
-  --board-size: min(
-    calc(100vw - 44px),
-    360px,
-    calc(
-      (100dvh - var(--hud-h) - var(--footer-h) - var(--health-h)) / 2
-      - var(--emitter-h)
-      - var(--panel-gap)
-      - var(--panel-pad-block)
-    )
-  );
+  --cell-gap: clamp(4px, 0.7dvh, 6px);
+  --frame-ratio: 0.4615384615;
+  --frame-main-w: 83.333333%;
+  --frame-side-w: 8.333333%;
 }
 
 * {
@@ -64,16 +50,19 @@ button {
 .game-shell {
   position: relative;
   display: grid;
-  grid-template-rows: var(--hud-h) minmax(0, 1fr) var(--footer-h);
-  width: min(100vw, 430px);
-  height: 100vh;
-  height: 100dvh;
-  max-height: 940px;
+  grid-template-rows: 2fr 22fr 2fr;
+  width: min(100vw, calc(100vh * var(--frame-ratio)));
+  width: min(100dvw, calc(100dvh * var(--frame-ratio)));
+  max-width: 100vw;
+  max-width: 100dvw;
+  aspect-ratio: 12 / 26;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(84, 212, 143, 0.09), transparent 24%),
     var(--bg);
-  border-inline: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 1px 0 rgba(255, 255, 255, 0.08),
+    inset -1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .hud {
@@ -81,8 +70,9 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: var(--hud-h);
-  padding: max(12px, env(safe-area-inset-top)) 14px 10px;
+  min-height: 0;
+  padding: 6px 10px;
+  overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(17, 19, 19, 0.95);
 }
@@ -106,7 +96,7 @@ button {
 }
 
 .screen-pill {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   max-width: 76px;
   padding: 3px 7px;
   overflow: hidden;
@@ -161,10 +151,7 @@ button {
 .play-area {
   position: relative;
   display: grid;
-  grid-template-rows:
-    minmax(112px, 1fr)
-    var(--health-h)
-    minmax(0, calc(var(--board-size) + var(--emitter-h) + var(--panel-gap) + var(--panel-pad-block)));
+  grid-template-rows: 10fr 1fr 11fr;
   min-height: 0;
 }
 
@@ -176,6 +163,9 @@ button {
 }
 
 .field {
+  justify-self: center;
+  width: var(--frame-main-w);
+  height: 100%;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 20% 100%,
@@ -259,13 +249,12 @@ button {
 }
 
 .health-strip {
-  height: var(--health-h);
   z-index: 3;
   display: grid;
   grid-template-columns: minmax(72px, auto) 1fr;
   gap: 8px;
   align-items: center;
-  padding: 6px 14px;
+  padding: 4px 12px;
   background: #101312;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
@@ -273,14 +262,14 @@ button {
 
 .health-value {
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
 }
 
 .health-track {
-  height: 12px;
+  height: 9px;
   overflow: hidden;
   background: #2a201f;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -297,12 +286,32 @@ button {
 
 .puzzle-panel {
   display: grid;
-  grid-template-rows: var(--board-size) var(--emitter-h);
-  gap: var(--panel-gap);
-  padding: 10px 14px 8px;
+  grid-template-rows: 10fr 1fr;
+  gap: 0;
+  padding: 0;
   background:
     linear-gradient(180deg, #1a211d, #141816),
     var(--panel);
+}
+
+.board-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.emitter-side {
+  flex: 0 0 var(--frame-side-w);
+  min-width: 0;
+}
+
+.board-cell-area {
+  flex: 0 0 var(--frame-main-w);
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
 }
 
 .board {
@@ -312,12 +321,11 @@ button {
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(5, 1fr);
   gap: var(--cell-gap);
-  width: var(--board-size);
-  height: var(--board-size);
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   aspect-ratio: 1;
-  max-width: 100%;
   max-height: 100%;
   padding: 8px;
   background: #0d0f0e;
@@ -382,16 +390,16 @@ button {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--cell-gap);
-  align-self: end;
+  align-self: stretch;
   justify-self: center;
-  width: var(--board-size);
-  max-width: 100%;
-  padding-inline: 8px;
+  width: var(--frame-main-w);
+  min-height: 0;
+  padding: 0 8px 5px;
 }
 
 .emitter {
   position: relative;
-  height: var(--emitter-h);
+  height: 100%;
   padding: 0;
   overflow: hidden;
   background: #262b26;
@@ -437,11 +445,12 @@ button {
 
 .control-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(88px, 96px);
-  gap: 10px;
+  grid-template-columns: 9fr 3fr;
+  gap: 8px;
   align-items: center;
-  min-height: var(--footer-h);
-  padding: 10px 14px var(--footer-safe);
+  min-height: 0;
+  padding: 6px 8px;
+  overflow: hidden;
   background: rgba(17, 19, 19, 0.97);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -451,7 +460,8 @@ button {
   flex-wrap: nowrap;
   gap: 8px;
   min-width: 0;
-  height: 52px;
+  height: 100%;
+  min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -472,10 +482,10 @@ button {
 .bag-piece {
   position: relative;
   display: grid;
-  flex: 0 0 clamp(76px, calc((100% - 8px) / 2), 116px);
+  flex: 0 0 clamp(56px, calc((100% - 8px) / 2), 116px);
   place-items: center;
   min-width: 0;
-  height: 52px;
+  height: 100%;
   padding: 0;
   background: #242924;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -490,8 +500,8 @@ button {
 }
 
 .bag-piece img {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   pointer-events: none;
 }
 
@@ -560,6 +570,16 @@ button {
   color: var(--text);
   font-weight: 800;
   cursor: pointer;
+}
+
+.control-bar .primary-button {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0 4px;
+  font-size: 0.74rem;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .primary-button.wide {
@@ -658,21 +678,11 @@ button {
 
 @media (max-width: 360px) {
   :root {
-    --hud-h: 58px;
-    --footer-h: 76px;
-    --health-h: 32px;
-    --emitter-h: 28px;
-    --panel-gap: 6px;
-    --panel-pad-block: 14px;
     --cell-gap: 4px;
   }
 
-  .game-shell {
-    grid-template-rows: var(--hud-h) minmax(0, 1fr) var(--footer-h);
-  }
-
   .hud {
-    padding-inline: 10px;
+    padding: 5px 8px;
   }
 
   .brand {
@@ -704,27 +714,23 @@ button {
     font-size: 0.78rem;
   }
 
-  .bag-piece,
-  .primary-button {
-    min-height: 46px;
-    height: 46px;
+  .piece-count {
+    font-size: 0.62rem;
+  }
+
+  .control-bar .primary-button {
+    font-size: 0.74rem;
   }
 }
 
 @media (max-height: 620px) {
   :root {
-    --hud-h: 56px;
-    --footer-h: 72px;
-    --health-h: 30px;
-    --emitter-h: 26px;
-    --panel-gap: 6px;
-    --panel-pad-block: 12px;
     --cell-gap: 4px;
   }
 
   .hud {
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 
   .stage-info {
@@ -736,16 +742,20 @@ button {
     font-size: 0.62rem;
   }
 
-  .puzzle-panel {
-    padding: 6px 12px;
-  }
-
   .board {
     padding: 6px;
   }
 
+  .emitter-row {
+    padding-bottom: 4px;
+  }
+
   .control-bar {
-    padding-top: 8px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding: 5px 7px;
+  }
+
+  .bag-piece img {
+    width: 26px;
+    height: 26px;
   }
 }

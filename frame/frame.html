@@ -9,12 +9,45 @@
 
   <body>
     <div id="main-area">
-      <div id="header"></div>
-      <div id="field"></div>
-      <div id="hp"></div>
+      <div id="header">
+        <h1 id="title">ゲーム</h1>
+        <div id="status">
+          <div id="stage" class="status-block"><span class="head">STAGE</span><span class="num">1</span></div>
+          <div id="score" class="status-block"><span class="head">SCORE</span><span class="num">0</span></div>
+        </div>
+      </div>
+      <div id="field">
+        <div id="enemy0" class="enemies-layer" laser-type="0" laser-damage="0">
+          <!-- 敵をdivで挿入 -->
+        </div>
+        <div id="enemy1" class="enemies-layer" laser-type="0" laser-damage="0">
+          <!-- 敵をdivで挿入 -->
+        </div>
+        <div id="enemy2" class="enemies-layer" laser-type="1" laser-damage="0">
+          <!-- 敵をdivで挿入 -->
+        </div>
+        <div id="enemy3" class="enemies-layer" laser-type="0" laser-damage="0">
+          <!-- 敵をdivで挿入 -->
+        </div>
+        <div id="enemy4" class="enemies-layer" laser-type="0" laser-damage="0">
+          <!-- 敵をdivで挿入 -->
+        </div>
+      </div>
+      <div id="hp">
+        <div id="hp-text">300/300</div>
+        <div id="hp-bar">
+          <div id="hp-fill"></div>
+        </div>
+      </div>
       <div id="board">
-        <div id="emitter-left"></div>
-        <div id="sell"></div>
+        <div id="emitter-left">
+          <div id="emitter0" class="emitter emitter-left" data-state="0"></div>
+          <div id="emitter1" class="emitter emitter-left" data-state="0"></div>
+          <div id="emitter2" class="emitter emitter-left" data-state="0"></div>
+          <div id="emitter3" class="emitter emitter-left" data-state="0"></div>
+          <div id="emitter4" class="emitter emitter-left" data-state="0"></div>
+        </div>
+        <div id="grid"></div>
         <div id="emitter-right"></div>
       </div>
       <div id="emitter-bottom"></div>

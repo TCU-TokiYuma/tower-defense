@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>屈折ローグ</title>
     <base href="./" />
-    <link rel="stylesheet" href="./style.css?v=20260527-8" />
+    <link rel="stylesheet" href="./style.css?v=20260527-9" />
   </head>
   <body>
     <div class="game-shell" id="gameShell">
@@ -46,7 +46,13 @@
         </div>
 
         <section class="puzzle-panel" aria-label="屈折盤面">
-          <div class="board" id="board"></div>
+          <div class="board-row">
+            <div class="emitter-side emitter-left" id="emitterLeft" aria-hidden="true"></div>
+            <div class="board-cell-area" id="sell">
+              <div class="board" id="board"></div>
+            </div>
+            <div class="emitter-side emitter-right" id="emitterRight" aria-hidden="true"></div>
+          </div>
           <div class="emitter-row" id="emitterRow" aria-label="レーザー射出口"></div>
         </section>
 
@@ -84,6 +90,6 @@
       </div>
     </div>
 
-    <script src="./script.js?v=20260527-8"></script>
+    <script src="./script.js?v=20260527-9"></script>
   </body>
 </html>

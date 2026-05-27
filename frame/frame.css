@@ -7,59 +7,119 @@ body {
 }
 
 #main-area {
-  width: min(100dvw, calc(100dvh * 12 / 26));
+  --b: min(100dvw, calc(100dvh * 12 / 26)) / 12;
+  width: calc(var(--b) * 12);
   aspect-ratio: 12 / 26;
   background-color: #f00;
 }
 
 #header {
   width: 100%;
-  height: calc(2 / 26 * 100%);
+  height: calc(var(--b) * 2);
   background-color: #0f0;
+  display: flex;
+}
+
+#title {
+  margin: auto 0;
+  text-align: left;
+  font-size: min(100dvw / (12*1), 100dvh / (26*1));
+}
+
+#status {
+  width: 50%;
+  background-color: #888;
+  margin-left: auto;
+  display: flex;
+}
+
+.status-block {
+  height: 100%;
+  width: 50%;
+  background-color: #fff;
+  display: grid;
+  place-items: center;
+  line-height: 0;
 }
 
 #field {
-  height: calc(10 / 26 * 100%);
+  height: calc(var(--b) * 10);
   aspect-ratio: 1 / 1;
   background-color: #00f;
   margin: 0 auto;
+  display: flex;
+}
+
+.enemies-layer {
+  width: 20%;
+  height: 100%;
 }
 
 #hp {
   width: 100%;
-  height: calc(1 / 26 * 100%);
+  height: calc(var(--b) * 1);
   background-color: #ff0;
+  display: flex;
+  container-type: size;
+}
+
+#hp-text {
+  width: calc(2/12 * 100%);
+  text-align: right;
+  margin: auto;
+  font-size: min(100dvw / (12*2.5), 100dvh / (26*2.5));
+}
+
+#hp-bar {
+  width: calc(10 / 12 * 100%);
+  height: 40cqh;
+  margin: 20cqh;
+  border: #000 solid 10cqh;
+}
+
+#hp-fill {
+  width: 100%;
+  height: 100%;
+  background-color: #f00;
 }
 
 #board {
   width: 100%;
-  height: calc(10 / 26 * 100%);
+  height: calc(var(--b) * 10);
   background-color: #0ff;
   display: flex;
 }
 
-#emitter-left, #emitter-right {
-  width: calc(1 / 12 * 100%);
-  height: 100%;
-  background-color: #f0f;
-}
-
-#sell {
+#grid {
   width: calc(10 / 12 * 100%);
   aspect-ratio: 1 / 1;
   background-color: #fff;
 }
 
+.emitter {
+  width: calc(var(--b) * 2);
+  height: calc(var(--b) * 1);
+  background-color: #f08;
+}
+
+#emitter-left, #emitter-right {
+  width: calc(var(--b) * 1);
+  height: 100%;
+  background-color: #f0f;
+}
+
+
+
 #emitter-bottom {
-  width: calc(10 / 12 * 100%);
-  height: calc(1 / 26 * 100%);
+  width: calc(var(--b) * 10);
+  height: calc(var(--b) * 1);
   background-color: #f8f;
   margin: 0 auto;
 }
 
 #footer {
   width: 100%;
-  height: calc(2 / 26 * 100%);
+  height: calc(var(--b) * 2);
   background-color: #8f8;
   display: flex;
 }
@@ -70,4 +130,17 @@ body {
 
 #pause {
   width: calc(3 / 12 * 100%);
+}
+
+[laser-type="1"] {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.4) 45%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.4) 55%,
+    transparent 60%,
+    transparent 100%
+  );
 }
