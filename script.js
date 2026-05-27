@@ -16,7 +16,10 @@ const PIECE_META = {
 const LASER_SHIFT_MIN_SECONDS = 20;
 const LASER_SHIFT_MAX_SECONDS = 35;
 const PIECE_DROP_CHANCE = 0.36;
-const INITIAL_HEALTH = 100;
+const INITIAL_HEALTH = 300;
+const BASE_STAGE_CLEAR_HEAL = 30;
+const KILL_HEAL_PER_UPGRADE = 4;
+const STAGE_CLEAR_HEAL_UPGRADE = 20;
 const BASE_STAGE_ENEMY_COUNT = 8;
 const ENEMIES_PER_STAGE = 3;
 const BASE_SPAWN_INTERVAL = 1.15;
@@ -156,6 +159,24 @@ const UPGRADE_POOL = [
     },
   },
   {
+    id: "killHeal",
+    icon: "吸",
+    name: "撃破吸収",
+    detail: `敵撃破時の回復 +${KILL_HEAL_PER_UPGRADE}`,
+    apply: (state) => {
+      state.stats.killHeal += KILL_HEAL_PER_UPGRADE;
+    },
+  },
+  {
+    id: "stageHeal",
+    icon: "修",
+    name: "自陣修復",
+    detail: `ステージクリア回復 +${STAGE_CLEAR_HEAL_UPGRADE}`,
+    apply: (state) => {
+      state.stats.stageClearHealBonus += STAGE_CLEAR_HEAL_UPGRADE;
+    },
+  },
+  {
     id: "slow",
     icon: "遅",
     name: "粘性フィールド",
@@ -202,7 +223,6 @@ const elements = {
   emitterRow: document.getElementById("emitterRow"),
   enemyLayer: document.getElementById("enemyLayer"),
   laserSvg: document.getElementById("laserSvg"),
-  laserLine: document.getElementById("laserLine"),
   pieceBag: document.getElementById("pieceBag"),
   pauseButton: document.getElementById("pauseButton"),
   startOverlay: document.getElementById("startOverlay"),
@@ -243,12 +263,14 @@ const state = {
   enemyId: 0,
   spawnTimer: 0,
   spawnedThisStage: 0,
-  hitEnemyId: null,
+  hitEnemyIds: new Set(),
   stats: {
     damage: 2.8,
     enemySpeedFactor: 1,
     scoreFactor: 1,
     pierce: 0,
+    killHeal: 0,
+    stageClearHealBonus: 0,
   },
 };
 
@@ -463,10 +485,10 @@ function handleDragCancel(event) {
 
 function placePieceFromBag(piece, x, y) {
   const oldPiece = state.board[y][x];
-  if (oldPiece || piece !== "reflector" || !canUsePiece(piece)) return;
+  if (oldPiece || !PIECE_ORDER.includes(piece) || !canUsePiece(piece)) return;
 
   state.bag[piece] -= 1;
-  state.board[y][x] = { type: "reflector", rotation: 0 };
+  state.board[y][x] = { type: piece, rotation: 0 };
 
   renderBoard();
   renderPieceBag();
@@ -584,7 +606,12 @@ function renderBoard() {
     for (let x = 0; x < BOARD_SIZE; x += 1) {
       const cell = state.cells[y * BOARD_SIZE + x];
       const block = state.board[y][x];
-      cell.classList.toggle("has-reflector", Boolean(block));
+      cell.classList.toggle("has-piece", Boolean(block));
+      if (block) {
+        cell.dataset.piece = block.type;
+      } else {
+        delete cell.dataset.piece;
+      }
       cell.innerHTML = block ? getPieceIcon(block.type, block.rotation) : "";
     }
   }
@@ -689,23 +716,26 @@ function moveEnemies(dt) {
 
 function damageEnemies(dt) {
   const trace = traceLaser();
-  state.activeColumn = trace.activeColumn;
-  state.hitEnemyId = null;
+  state.activeColumn = trace.activeColumns[0] ?? null;
+  state.hitEnemyIds = new Set();
 
-  if (state.activeColumn === null) return;
+  if (trace.activeColumns.length === 0) return;
 
-  const laneEnemies = state.enemies
-    .filter((enemy) => enemy.lane === state.activeColumn)
-    .sort((a, b) => b.y - a.y);
+  for (const activeColumn of trace.activeColumns) {
+    const laneEnemies = state.enemies
+      .filter((enemy) => enemy.lane === activeColumn && enemy.hp > 0)
+      .sort((a, b) => b.y - a.y);
 
-  if (laneEnemies.length === 0) return;
+    if (laneEnemies.length === 0) continue;
 
-  const primary = laneEnemies[0];
-  primary.hp -= state.stats.damage * dt;
-  state.hitEnemyId = primary.id;
+    const primary = laneEnemies[0];
+    primary.hp -= state.stats.damage * dt;
+    state.hitEnemyIds.add(primary.id);
 
-  for (let index = 1; index <= state.stats.pierce && index < laneEnemies.length; index += 1) {
-    laneEnemies[index].hp -= state.stats.damage * dt * 0.35;
+    for (let index = 1; index <= state.stats.pierce && index < laneEnemies.length; index += 1) {
+      laneEnemies[index].hp -= state.stats.damage * dt * 0.35;
+      state.hitEnemyIds.add(laneEnemies[index].id);
+    }
   }
 
   const defeated = state.enemies.filter((enemy) => enemy.hp <= 0);
@@ -714,6 +744,9 @@ function damageEnemies(dt) {
   state.enemies = state.enemies.filter((enemy) => enemy.hp > 0);
   const defeatedScore = defeated.reduce((total, enemy) => total + enemy.score, 0);
   state.score += Math.round(defeatedScore * state.stage * state.stats.scoreFactor);
+  if (state.stats.killHeal > 0) {
+    healPlayer(defeated.length * state.stats.killHeal);
+  }
   grantPieceRewards(defeated.length);
 }
 
@@ -735,48 +768,113 @@ function resolveStage() {
   if (state.spawnQueue.length > 0 || state.enemies.length > 0 || state.screen !== SCREENS.PLAY) {
     return;
   }
+  healPlayer(getStageClearHeal());
   openUpgrade();
 }
 
+function healPlayer(amount) {
+  if (amount <= 0 || state.health <= 0) return;
+  state.health = Math.min(state.maxHealth, state.health + amount);
+}
+
+function getStageClearHeal() {
+  return BASE_STAGE_CLEAR_HEAL + state.stats.stageClearHealBonus;
+}
+
 function traceLaser() {
-  let x = state.laserColumn;
-  let y = BOARD_SIZE - 1;
-  let direction = "up";
-  let activeColumn = null;
-  const cells = [];
-  const visited = new Set();
-  let exitDirection = direction;
+  const paths = [];
+  const activeColumns = [];
+  const beams = [
+    {
+      x: state.laserColumn,
+      y: BOARD_SIZE - 1,
+      direction: "up",
+      cells: [],
+      visited: new Set(),
+    },
+  ];
+  let processedBeams = 0;
 
-  for (let step = 0; step < 36; step += 1) {
-    if (!isInsideBoard(x, y)) {
-      if (y < 0 && direction === "up") {
-        activeColumn = x;
+  while (beams.length > 0 && paths.length < 32 && processedBeams < 64) {
+    processedBeams += 1;
+    const beam = beams.pop();
+    let { x, y, direction } = beam;
+    const cells = beam.cells.slice();
+    const visited = new Set(beam.visited);
+    let activeColumn = null;
+    let exitDirection = direction;
+    let branched = false;
+
+    for (let step = 0; step < 42; step += 1) {
+      if (!isInsideBoard(x, y)) {
+        if (y < 0 && direction === "up" && x >= 0 && x < BOARD_SIZE) {
+          activeColumn = x;
+          activeColumns.push(x);
+        }
+        break;
       }
-      break;
+
+      const visitKey = `${x}:${y}:${direction}`;
+      if (visited.has(visitKey)) break;
+      visited.add(visitKey);
+
+      const cellPoint = { x, y, direction, exitDirection: direction };
+      cells.push(cellPoint);
+
+      const block = state.board[y][x];
+      if (block?.type === "splitter") {
+        const outputDirections = getSplitterOutputDirections(block, direction);
+        if (outputDirections.length === 0) {
+          cellPoint.exitDirection = null;
+          exitDirection = null;
+          break;
+        }
+
+        branched = true;
+        for (const outputDirection of outputDirections) {
+          const branchPoint = { ...cellPoint, exitDirection: outputDirection };
+          const branchCells = cells.slice(0, -1).concat(branchPoint);
+          const delta = DIR_DELTA[outputDirection];
+          beams.push({
+            x: x + delta.dx,
+            y: y + delta.dy,
+            direction: outputDirection,
+            cells: branchCells,
+            visited: new Set(visited),
+          });
+        }
+        break;
+      }
+
+      if (block?.type === "reflector") {
+        direction = reflectDirection(block, direction);
+      }
+      cellPoint.exitDirection = direction;
+      exitDirection = direction;
+
+      x += DIR_DELTA[direction].dx;
+      y += DIR_DELTA[direction].dy;
     }
 
-    const visitKey = `${x}:${y}:${direction}`;
-    if (visited.has(visitKey)) break;
-    visited.add(visitKey);
-    cells.push({ x, y, direction });
-
-    const block = state.board[y][x];
-    if (block) {
-      direction = reflectDirection(block, direction);
+    if (!branched) {
+      paths.push({ cells, activeColumn, exitDirection });
     }
-    cells[cells.length - 1].exitDirection = direction;
-    exitDirection = direction;
-
-    x += DIR_DELTA[direction].dx;
-    y += DIR_DELTA[direction].dy;
   }
 
-  return { cells, activeColumn, exitDirection };
+  return { paths, activeColumns };
 }
 
 function reflectDirection(block, direction) {
   const rotation = ((block.rotation % 4) + 4) % 4;
   return REFLECTOR_REFLECTIONS[rotation][direction];
+}
+
+function getSplitterOutputDirections(block, direction) {
+  const rotation = ((block.rotation % 4) + 4) % 4;
+  const ports = SPLITTER_PORTS[rotation];
+  const entryPort = OPPOSITE_DIR[direction];
+  if (!ports.includes(entryPort)) return [];
+  return ports.filter((port) => port !== entryPort);
 }
 
 function isInsideBoard(x, y) {
@@ -790,9 +888,10 @@ function drawLaser() {
   if (!playRect.width || !boardRect.width) return;
 
   elements.laserSvg.setAttribute("viewBox", `0 0 ${playRect.width} ${playRect.height}`);
+  elements.laserSvg.replaceChildren();
 
   const trace = traceLaser();
-  state.activeColumn = trace.activeColumn;
+  state.activeColumn = trace.activeColumns[0] ?? null;
 
   const cellW = boardRect.width / BOARD_SIZE;
   const cellH = boardRect.height / BOARD_SIZE;
@@ -800,31 +899,40 @@ function drawLaser() {
   const boardTop = boardRect.top - playRect.top;
   const boardBottom = boardRect.bottom - playRect.top;
   const fieldTop = fieldRect.top - playRect.top;
-  const points = [];
-
-  points.push({
+  const startPoint = {
     x: boardLeft + (state.laserColumn + 0.5) * cellW,
     y: boardBottom + 12,
-  });
+  };
 
-  for (const point of trace.cells) {
-    points.push({
-      x: boardLeft + (point.x + 0.5) * cellW,
-      y: boardTop + (point.y + 0.5) * cellH,
-    });
+  for (const path of trace.paths) {
+    const points = [startPoint];
+
+    for (const point of path.cells) {
+      points.push({
+        x: boardLeft + (point.x + 0.5) * cellW,
+        y: boardTop + (point.y + 0.5) * cellH,
+      });
+    }
+
+    if (path.activeColumn !== null) {
+      const x = boardLeft + (path.activeColumn + 0.5) * cellW;
+      points.push({ x, y: boardTop - 6 });
+      points.push({ x, y: fieldTop + 8 });
+    } else if (path.cells.length > 0) {
+      const last = path.cells[path.cells.length - 1];
+      const exitDirection = last.exitDirection || path.exitDirection;
+      if (exitDirection) {
+        const exit = exitPointFromLastCell(last, exitDirection, boardLeft, boardTop, cellW, cellH);
+        points.push(exit);
+      }
+    }
+
+    if (points.length < 2) continue;
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    line.classList.add("laser-line");
+    line.setAttribute("points", points.map((point) => `${point.x},${point.y}`).join(" "));
+    elements.laserSvg.appendChild(line);
   }
-
-  if (trace.activeColumn !== null) {
-    const x = boardLeft + (trace.activeColumn + 0.5) * cellW;
-    points.push({ x, y: boardTop - 6 });
-    points.push({ x, y: fieldTop + 8 });
-  } else if (trace.cells.length > 0) {
-    const last = trace.cells[trace.cells.length - 1];
-    const exit = exitPointFromLastCell(last, trace.exitDirection, boardLeft, boardTop, cellW, cellH);
-    points.push(exit);
-  }
-
-  elements.laserLine.setAttribute("points", points.map((point) => `${point.x},${point.y}`).join(" "));
 }
 
 function exitPointFromLastCell(last, direction, boardLeft, boardTop, cellW, cellH) {
@@ -845,7 +953,7 @@ function renderEnemies() {
     .map((enemy) => {
       const hpRatio = Math.max(0, enemy.hp / enemy.maxHp);
       const left = laneWidth * (enemy.lane + 0.5);
-      const hitClass = enemy.id === state.hitEnemyId ? " is-hit" : "";
+      const hitClass = state.hitEnemyIds.has(enemy.id) ? " is-hit" : "";
       return `
         <div class="enemy${hitClass}" style="left:${left}px; top:${enemy.y}%" title="${enemy.name} 攻撃力:${enemy.attack}">
           <img src="${enemy.asset}" alt="">
@@ -887,6 +995,7 @@ function openUpgrade() {
 function startNextStage() {
   beginStage(state.stage + 1);
   setScreen(SCREENS.PLAY);
+  renderPieceBag();
   updateHud();
 }
 
@@ -915,12 +1024,14 @@ function resetGameState() {
   state.enemyId = 0;
   state.spawnTimer = 0;
   state.spawnedThisStage = 0;
-  state.hitEnemyId = null;
+  state.hitEnemyIds = new Set();
   state.stats = {
     damage: 2.8,
     enemySpeedFactor: 1,
     scoreFactor: 1,
     pierce: 0,
+    killHeal: 0,
+    stageClearHealBonus: 0,
   };
 
   elements.pauseButton.textContent = "一時停止";
@@ -1068,6 +1179,7 @@ function shuffle(items) {
 function createInitialBag() {
   return {
     reflector: 8,
+    splitter: 0,
   };
 }
 

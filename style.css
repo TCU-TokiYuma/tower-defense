@@ -14,7 +14,8 @@
   --danger: #f06464;
   --cell-gap: 6px;
   --hud-h: 64px;
-  --footer-h: 82px;
+  --footer-safe: max(10px, env(safe-area-inset-bottom));
+  --footer-h: calc(72px + var(--footer-safe));
   --health-h: 34px;
   --emitter-h: 32px;
   --panel-gap: 8px;
@@ -341,11 +342,11 @@ button {
   touch-action: none;
 }
 
-.cell.has-reflector {
+.cell.has-piece {
   cursor: grab;
 }
 
-.cell.has-reflector:active {
+.cell.has-piece:active {
   cursor: grabbing;
 }
 
@@ -423,7 +424,7 @@ button {
   pointer-events: none;
 }
 
-#laserLine {
+.laser-line {
   fill: none;
   stroke: var(--cyan);
   stroke-width: 5;
@@ -436,19 +437,30 @@ button {
 
 .control-bar {
   display: grid;
-  grid-template-columns: 1fr 96px;
+  grid-template-columns: minmax(0, 1fr) minmax(88px, 96px);
   gap: 10px;
   align-items: center;
   min-height: var(--footer-h);
-  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+  padding: 10px 14px var(--footer-safe);
   background: rgba(17, 19, 19, 0.97);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .piece-bag {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  min-width: 0;
+  height: 52px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+
+.piece-bag::-webkit-scrollbar {
+  height: 4px;
 }
 
 .bag-piece,
@@ -460,12 +472,15 @@ button {
 .bag-piece {
   position: relative;
   display: grid;
+  flex: 0 0 clamp(76px, calc((100% - 8px) / 2), 116px);
   place-items: center;
+  min-width: 0;
   height: 52px;
   padding: 0;
   background: #242924;
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: grab;
+  scroll-snap-align: start;
   touch-action: none;
   user-select: none;
 }

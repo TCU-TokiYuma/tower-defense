@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>屈折ローグ</title>
     <base href="./" />
-    <link rel="stylesheet" href="./style.css?v=20260527-4" />
+    <link rel="stylesheet" href="./style.css?v=20260527-8" />
   </head>
   <body>
     <div class="game-shell" id="gameShell">
@@ -39,7 +39,7 @@
         </section>
 
         <div class="health-strip" aria-label="自陣体力">
-          <span class="health-value" id="healthText">100/100</span>
+          <span class="health-value" id="healthText">300/300</span>
           <div class="health-track" aria-hidden="true">
             <div class="health-fill" id="healthFill"></div>
           </div>
@@ -50,9 +50,7 @@
           <div class="emitter-row" id="emitterRow" aria-label="レーザー射出口"></div>
         </section>
 
-        <svg class="laser-svg" id="laserSvg" aria-hidden="true">
-          <polyline id="laserLine" points=""></polyline>
-        </svg>
+        <svg class="laser-svg" id="laserSvg" aria-hidden="true"></svg>
       </main>
 
       <footer class="control-bar">
@@ -86,6 +84,6 @@
       </div>
     </div>
 
-    <script src="./script.js?v=20260527-4"></script>
+    <script src="./script.js?v=20260527-8"></script>
   </body>
 </html>
