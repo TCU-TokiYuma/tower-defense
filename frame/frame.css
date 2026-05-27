@@ -96,26 +96,34 @@ body {
   background-color: #fff;
 }
 
-.emitter {
-  width: calc(var(--b) * 2);
-  height: calc(var(--b) * 1);
-  background-color: #f08;
-}
-
-#emitter-left, #emitter-right {
+#emitter-area-left, #emitter-area-right {
   width: calc(var(--b) * 1);
   height: 100%;
+  display: flex;
+  flex-direction: column;
   background-color: #f0f;
 }
 
-
-
-#emitter-bottom {
+#emitter-area-bottom {
   width: calc(var(--b) * 10);
   height: calc(var(--b) * 1);
   background-color: #f8f;
   margin: 0 auto;
 }
+
+.emitter {
+  width: calc(var(--b) * 1);
+  height: calc(var(--b) * 1);
+  margin: 0;
+  background-color: #f08;
+}
+
+.emitter-left, .emitter-right {
+  margin: calc(var(--b) * 0.5) 0;
+  transform: rotate(90deg);
+}
+
+
 
 #footer {
   width: 100%;
