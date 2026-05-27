@@ -13,6 +13,22 @@
   --violet: #8d7cff;
   --danger: #f06464;
   --cell-gap: 6px;
+  --hud-h: 64px;
+  --footer-h: 82px;
+  --health-h: 34px;
+  --emitter-h: 32px;
+  --panel-gap: 8px;
+  --panel-pad-block: 18px;
+  --board-size: min(
+    calc(100vw - 44px),
+    360px,
+    calc(
+      (100dvh - var(--hud-h) - var(--footer-h) - var(--health-h)) / 2
+      - var(--emitter-h)
+      - var(--panel-gap)
+      - var(--panel-pad-block)
+    )
+  );
 }
 
 * {
@@ -47,7 +63,7 @@ button {
 .game-shell {
   position: relative;
   display: grid;
-  grid-template-rows: 64px 1fr 82px;
+  grid-template-rows: var(--hud-h) minmax(0, 1fr) var(--footer-h);
   width: min(100vw, 430px);
   height: 100vh;
   height: 100dvh;
@@ -63,7 +79,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+  min-height: var(--hud-h);
   padding: max(12px, env(safe-area-inset-top)) 14px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(17, 19, 19, 0.95);
@@ -73,6 +90,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 0.9rem;
   font-weight: 800;
@@ -80,7 +98,14 @@ button {
   white-space: nowrap;
 }
 
+.brand-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .screen-pill {
+  flex: 0 1 auto;
   max-width: 76px;
   padding: 3px 7px;
   overflow: hidden;
@@ -95,6 +120,7 @@ button {
 }
 
 .brand-mark {
+  flex: 0 0 18px;
   width: 18px;
   height: 18px;
   background: conic-gradient(from 45deg, var(--cyan), var(--green), var(--amber), var(--cyan));
@@ -103,7 +129,8 @@ button {
 
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(42px, auto));
+  flex: 0 0 auto;
+  grid-template-columns: repeat(3, minmax(40px, auto));
   gap: 6px;
 }
 
@@ -127,16 +154,21 @@ button {
 .status-grid strong {
   font-size: 0.9rem;
   line-height: 1.05;
+  font-variant-numeric: tabular-nums;
 }
 
 .play-area {
   position: relative;
   display: grid;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows:
+    minmax(112px, 1fr)
+    var(--health-h)
+    minmax(0, calc(var(--board-size) + var(--emitter-h) + var(--panel-gap) + var(--panel-pad-block)));
   min-height: 0;
 }
 
 .field,
+.health-strip,
 .puzzle-panel {
   position: relative;
   min-height: 0;
@@ -225,10 +257,47 @@ button {
   background: var(--green);
 }
 
+.health-strip {
+  height: var(--health-h);
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(72px, auto) 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 14px;
+  background: #101312;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.health-value {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.health-track {
+  height: 12px;
+  overflow: hidden;
+  background: #2a201f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.health-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--amber));
+  border-radius: inherit;
+  transition: width 160ms ease;
+}
+
 .puzzle-panel {
   display: grid;
-  grid-template-rows: 1fr 38px;
-  gap: 8px;
+  grid-template-rows: var(--board-size) var(--emitter-h);
+  gap: var(--panel-gap);
   padding: 10px 14px 8px;
   background:
     linear-gradient(180deg, #1a211d, #141816),
@@ -242,8 +311,12 @@ button {
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(5, 1fr);
   gap: var(--cell-gap);
-  width: min(100%, 360px);
+  width: var(--board-size);
+  height: var(--board-size);
+  min-width: 0;
+  min-height: 0;
   aspect-ratio: 1;
+  max-width: 100%;
   max-height: 100%;
   padding: 8px;
   background: #0d0f0e;
@@ -310,13 +383,14 @@ button {
   gap: var(--cell-gap);
   align-self: end;
   justify-self: center;
-  width: min(100%, 360px);
+  width: var(--board-size);
+  max-width: 100%;
   padding-inline: 8px;
 }
 
 .emitter {
   position: relative;
-  height: 32px;
+  height: var(--emitter-h);
   padding: 0;
   overflow: hidden;
   background: #262b26;
@@ -365,6 +439,7 @@ button {
   grid-template-columns: 1fr 96px;
   gap: 10px;
   align-items: center;
+  min-height: var(--footer-h);
   padding: 10px 14px max(10px, env(safe-area-inset-bottom));
   background: rgba(17, 19, 19, 0.97);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -567,8 +642,18 @@ button {
 }
 
 @media (max-width: 360px) {
+  :root {
+    --hud-h: 58px;
+    --footer-h: 76px;
+    --health-h: 32px;
+    --emitter-h: 28px;
+    --panel-gap: 6px;
+    --panel-pad-block: 14px;
+    --cell-gap: 4px;
+  }
+
   .game-shell {
-    grid-template-rows: 58px 1fr 76px;
+    grid-template-rows: var(--hud-h) minmax(0, 1fr) var(--footer-h);
   }
 
   .hud {
@@ -587,7 +672,8 @@ button {
   }
 
   .status-grid {
-    grid-template-columns: repeat(4, minmax(34px, auto));
+    grid-template-columns: repeat(3, minmax(34px, auto));
+    gap: 4px;
   }
 
   .status-grid > div {
@@ -607,5 +693,44 @@ button {
   .primary-button {
     min-height: 46px;
     height: 46px;
+  }
+}
+
+@media (max-height: 620px) {
+  :root {
+    --hud-h: 56px;
+    --footer-h: 72px;
+    --health-h: 30px;
+    --emitter-h: 26px;
+    --panel-gap: 6px;
+    --panel-pad-block: 12px;
+    --cell-gap: 4px;
+  }
+
+  .hud {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .stage-info {
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    min-height: 21px;
+    padding: 4px 6px;
+    font-size: 0.62rem;
+  }
+
+  .puzzle-panel {
+    padding: 6px 12px;
+  }
+
+  .board {
+    padding: 6px;
+  }
+
+  .control-bar {
+    padding-top: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 }

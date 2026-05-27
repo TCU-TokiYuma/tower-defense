@@ -3,13 +3,15 @@ const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
 const assetUrl = (path) => new URL(path, document.baseURI).href;
 const ASSETS = {
   reflector: assetUrl("assets/reflector.svg"),
+  splitter: assetUrl("assets/splitter.svg"),
   enemy: assetUrl("assets/enemy.svg"),
   emitter: assetUrl("assets/emitter.svg"),
 };
 
-const PIECE_ORDER = ["reflector"];
+const PIECE_ORDER = ["reflector", "splitter"];
 const PIECE_META = {
   reflector: { label: "反射板" },
+  splitter: { label: "分離機" },
 };
 const LASER_SHIFT_MIN_SECONDS = 20;
 const LASER_SHIFT_MAX_SECONDS = 35;
@@ -92,6 +94,13 @@ const DIR_DELTA = {
   left: { dx: -1, dy: 0 },
 };
 
+const OPPOSITE_DIR = {
+  up: "down",
+  right: "left",
+  down: "up",
+  left: "right",
+};
+
 const REFLECTOR_REFLECTIONS = [
   {
     up: "right",
@@ -117,6 +126,13 @@ const REFLECTOR_REFLECTIONS = [
     down: "right",
     right: "down",
   },
+];
+
+const SPLITTER_PORTS = [
+  ["up", "left", "right"],
+  ["up", "right", "down"],
+  ["right", "down", "left"],
+  ["down", "left", "up"],
 ];
 
 const UPGRADE_POOL = [
@@ -166,6 +182,15 @@ const UPGRADE_POOL = [
       state.stats.pierce += 1;
     },
   },
+  {
+    id: "splitter",
+    icon: "分",
+    name: "分離機",
+    detail: "分離機ピース +1",
+    apply: (state) => {
+      addPieceToBag("splitter", 1);
+    },
+  },
 ];
 
 const elements = {
@@ -191,6 +216,7 @@ const elements = {
   stageText: document.getElementById("stageText"),
   scoreText: document.getElementById("scoreText"),
   healthText: document.getElementById("healthText"),
+  healthFill: document.getElementById("healthFill"),
   laserTimerText: document.getElementById("laserTimerText"),
 };
 
@@ -415,7 +441,12 @@ function handleDragEnd(event) {
       placePieceFromBag(state.dragging.piece, x, y);
     }
   } else if (state.dragging.source === "board") {
-    if (isPointInField(event.clientX, event.clientY) && state.dragging.moved) {
+    const cell = getCellAtPoint(event.clientX, event.clientY);
+    if (cell && state.dragging.moved) {
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      moveBoardPiece(state.dragging.fromX, state.dragging.fromY, x, y);
+    } else if (isPointInField(event.clientX, event.clientY) && state.dragging.moved) {
       removeBoardPiece(state.dragging.fromX, state.dragging.fromY);
     } else if (!state.dragging.moved) {
       rotateBoardPiece(state.dragging.fromX, state.dragging.fromY);
@@ -472,18 +503,20 @@ function moveDragGhost(x, y) {
 function updateDropTarget(x, y) {
   const cell = getCellAtPoint(x, y);
   const fieldTarget = state.dragging.source === "board" && state.dragging.moved && isPointInField(x, y);
-  if (state.dragging.targetCell === cell && state.dragging.fieldTarget === fieldTarget) return;
+  const boardTarget = state.dragging.source === "board" && state.dragging.moved && !fieldTarget ? cell : null;
+  const targetCell = state.dragging.source === "bag" ? cell : boardTarget;
+  if (state.dragging.targetCell === targetCell && state.dragging.fieldTarget === fieldTarget) return;
 
   if (state.dragging.targetCell) {
     state.dragging.targetCell.classList.remove("is-drop-target");
   }
   elements.field.classList.toggle("is-delete-target", fieldTarget);
 
-  state.dragging.targetCell = state.dragging.source === "bag" ? cell : null;
+  state.dragging.targetCell = targetCell;
   state.dragging.fieldTarget = fieldTarget;
 
   if (state.dragging.targetCell) {
-    cell.classList.add("is-drop-target");
+    state.dragging.targetCell.classList.add("is-drop-target");
   }
 }
 
@@ -530,6 +563,19 @@ function removeBoardPiece(x, y) {
   addPieceToBag(block.type, 1);
   renderBoard();
   renderPieceBag();
+  drawLaser();
+}
+
+function moveBoardPiece(fromX, fromY, toX, toY) {
+  if (fromX === toX && fromY === toY) return;
+
+  const movingBlock = state.board[fromY][fromX];
+  if (!movingBlock) return;
+
+  const targetBlock = state.board[toY][toX];
+  state.board[toY][toX] = movingBlock;
+  state.board[fromY][fromX] = targetBlock;
+  renderBoard();
   drawLaser();
 }
 
@@ -890,7 +936,13 @@ function updateHud() {
   elements.stageText.textContent = String(state.stage);
   elements.scoreText.textContent = String(state.score);
   elements.healthText.textContent = `${Math.ceil(Math.max(0, state.health))}/${state.maxHealth}`;
+  elements.healthFill.style.width = `${getHealthRatio() * 100}%`;
   elements.laserTimerText.textContent = `${Math.ceil(Math.max(0, state.laserShiftTimer))}s`;
+}
+
+function getHealthRatio() {
+  if (state.maxHealth <= 0) return 0;
+  return Math.max(0, Math.min(1, state.health / state.maxHealth));
 }
 
 function updateStagePlanView() {

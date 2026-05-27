@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>屈折ローグ</title>
     <base href="./" />
-    <link rel="stylesheet" href="./style.css?v=20260527-2" />
+    <link rel="stylesheet" href="./style.css?v=20260527-4" />
   </head>
   <body>
     <div class="game-shell" id="gameShell">
       <header class="hud">
         <div class="brand">
           <span class="brand-mark"></span>
-          <span>屈折ローグ</span>
+          <span class="brand-title">屈折ローグ</span>
           <span class="screen-pill" id="screenText">スタート</span>
         </div>
         <div class="status-grid" aria-label="ゲーム状態">
@@ -23,10 +23,6 @@
           <div>
             <span class="status-label">得点</span>
             <strong id="scoreText">0</strong>
-          </div>
-          <div>
-            <span class="status-label">体力</span>
-            <strong id="healthText">100</strong>
           </div>
           <div>
             <span class="status-label">変化</span>
@@ -41,6 +37,13 @@
           <div class="stage-info" id="stagePlanText">出現予定: --</div>
           <div class="enemy-layer" id="enemyLayer"></div>
         </section>
+
+        <div class="health-strip" aria-label="自陣体力">
+          <span class="health-value" id="healthText">100/100</span>
+          <div class="health-track" aria-hidden="true">
+            <div class="health-fill" id="healthFill"></div>
+          </div>
+        </div>
 
         <section class="puzzle-panel" aria-label="屈折盤面">
           <div class="board" id="board"></div>
@@ -83,6 +86,6 @@
       </div>
     </div>
 
-    <script src="./script.js?v=20260527-2"></script>
+    <script src="./script.js?v=20260527-4"></script>
   </body>
 </html>
