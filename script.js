@@ -2,19 +2,14 @@ const BOARD_SIZE = 5;
 const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
 const assetUrl = (path) => new URL(path, document.baseURI).href;
 const ASSETS = {
-  slash: assetUrl("assets/mirror-slash.svg"),
-  backslash: assetUrl("assets/mirror-backslash.svg"),
-  turn: assetUrl("assets/prism-turn.svg"),
+  reflector: assetUrl("assets/reflector.svg"),
   enemy: assetUrl("assets/enemy.svg"),
   emitter: assetUrl("assets/emitter.svg"),
 };
 
-const PIECE_ORDER = ["empty", "slash", "backslash", "turn"];
+const PIECE_ORDER = ["reflector"];
 const PIECE_META = {
-  empty: { label: "消去", countLabel: "無限" },
-  slash: { label: "右上反射" },
-  backslash: { label: "左上反射" },
-  turn: { label: "時計回り屈折" },
+  reflector: { label: "反射板" },
 };
 const LASER_SHIFT_MIN_SECONDS = 20;
 const LASER_SHIFT_MAX_SECONDS = 35;
@@ -97,26 +92,32 @@ const DIR_DELTA = {
   left: { dx: -1, dy: 0 },
 };
 
-const REFLECT = {
-  slash: {
+const REFLECTOR_REFLECTIONS = [
+  {
     up: "right",
     right: "up",
     down: "left",
     left: "down",
   },
-  backslash: {
+  {
     up: "left",
     left: "up",
     down: "right",
     right: "down",
   },
-  turn: {
+  {
     up: "right",
-    right: "down",
+    right: "up",
     down: "left",
-    left: "up",
+    left: "down",
   },
-};
+  {
+    up: "left",
+    left: "up",
+    down: "right",
+    right: "down",
+  },
+];
 
 const UPGRADE_POOL = [
   {
@@ -195,7 +196,7 @@ const elements = {
 
 const state = {
   screen: SCREENS.START,
-  board: Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill("empty")),
+  board: createEmptyBoard(),
   cells: [],
   emitters: [],
   enemies: [],
@@ -253,6 +254,7 @@ function buildBoard() {
     cell.dataset.x = String(x);
     cell.dataset.y = String(y);
     cell.setAttribute("aria-label", `セル ${x + 1}, ${y + 1}`);
+    cell.addEventListener("pointerdown", (event) => startBoardPieceDrag(event, x, y));
     elements.board.appendChild(cell);
     state.cells.push(cell);
   }
@@ -312,16 +314,16 @@ function renderPieceBag() {
 
   for (const piece of PIECE_ORDER) {
     const count = state.bag[piece] ?? 0;
-    const depleted = piece !== "empty" && count <= 0;
+    const depleted = count <= 0;
     const button = document.createElement("button");
-    button.className = `bag-piece${piece === "empty" ? " is-empty-tool" : ""}${depleted ? " is-depleted" : ""}`;
+    button.className = `bag-piece${depleted ? " is-depleted" : ""}`;
     button.type = "button";
     button.dataset.piece = piece;
     button.setAttribute("aria-label", `${PIECE_META[piece].label}ピース`);
     button.setAttribute("aria-disabled", depleted ? "true" : "false");
     button.innerHTML = `
       ${getPieceIcon(piece)}
-      <span class="piece-count">${piece === "empty" ? PIECE_META.empty.countLabel : count}</span>
+      <span class="piece-count">${count}</span>
     `;
     button.addEventListener("pointerdown", (event) => startPieceDrag(event, piece));
     elements.pieceBag.appendChild(button);
@@ -335,10 +337,48 @@ function startPieceDrag(event, piece) {
   clearDragState();
 
   state.dragging = {
+    source: "bag",
     piece,
     pointerId: event.pointerId,
-    ghost: createDragGhost(piece),
+    ghost: createDragGhost(piece, 0),
     targetCell: null,
+    fieldTarget: false,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false,
+  };
+
+  try {
+    event.currentTarget.setPointerCapture(event.pointerId);
+  } catch {
+    // ブラウザ差異で capture に失敗しても、window 側の pointermove で追跡します。
+  }
+
+  document.body.appendChild(state.dragging.ghost);
+  moveDragGhost(event.clientX, event.clientY);
+  updateDropTarget(event.clientX, event.clientY);
+}
+
+function startBoardPieceDrag(event, x, y) {
+  if (state.screen !== SCREENS.PLAY || state.paused || !state.board[y][x]) return;
+
+  event.preventDefault();
+  clearDragState();
+
+  const block = state.board[y][x];
+  state.dragging = {
+    source: "board",
+    piece: block.type,
+    fromX: x,
+    fromY: y,
+    rotation: block.rotation,
+    pointerId: event.pointerId,
+    ghost: createDragGhost(block.type, block.rotation),
+    targetCell: null,
+    fieldTarget: false,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false,
   };
 
   try {
@@ -355,6 +395,10 @@ function startPieceDrag(event, piece) {
 function handleDragMove(event) {
   if (!state.dragging || event.pointerId !== state.dragging.pointerId) return;
   event.preventDefault();
+  const distance = Math.hypot(event.clientX - state.dragging.startX, event.clientY - state.dragging.startY);
+  if (distance > 7) {
+    state.dragging.moved = true;
+  }
   moveDragGhost(event.clientX, event.clientY);
   updateDropTarget(event.clientX, event.clientY);
 }
@@ -363,11 +407,19 @@ function handleDragEnd(event) {
   if (!state.dragging || event.pointerId !== state.dragging.pointerId) return;
   event.preventDefault();
 
-  const cell = getCellAtPoint(event.clientX, event.clientY);
-  if (cell) {
-    const x = Number(cell.dataset.x);
-    const y = Number(cell.dataset.y);
-    placePieceFromBag(state.dragging.piece, x, y);
+  if (state.dragging.source === "bag") {
+    const cell = getCellAtPoint(event.clientX, event.clientY);
+    if (cell) {
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      placePieceFromBag(state.dragging.piece, x, y);
+    }
+  } else if (state.dragging.source === "board") {
+    if (isPointInField(event.clientX, event.clientY) && state.dragging.moved) {
+      removeBoardPiece(state.dragging.fromX, state.dragging.fromY);
+    } else if (!state.dragging.moved) {
+      rotateBoardPiece(state.dragging.fromX, state.dragging.fromY);
+    }
   }
 
   clearDragState();
@@ -380,21 +432,10 @@ function handleDragCancel(event) {
 
 function placePieceFromBag(piece, x, y) {
   const oldPiece = state.board[y][x];
-  if (oldPiece === piece) return;
+  if (oldPiece || piece !== "reflector" || !canUsePiece(piece)) return;
 
-  if (piece === "empty") {
-    if (oldPiece !== "empty") {
-      addPieceToBag(oldPiece, 1);
-      state.board[y][x] = "empty";
-    }
-  } else {
-    if (!canUsePiece(piece)) return;
-    state.bag[piece] -= 1;
-    if (oldPiece !== "empty") {
-      addPieceToBag(oldPiece, 1);
-    }
-    state.board[y][x] = piece;
-  }
+  state.bag[piece] -= 1;
+  state.board[y][x] = { type: "reflector", rotation: 0 };
 
   renderBoard();
   renderPieceBag();
@@ -402,7 +443,7 @@ function placePieceFromBag(piece, x, y) {
 }
 
 function canUsePiece(piece) {
-  return piece === "empty" || (state.bag[piece] ?? 0) > 0;
+  return (state.bag[piece] ?? 0) > 0;
 }
 
 function addPieceToBag(piece, amount) {
@@ -412,18 +453,15 @@ function addPieceToBag(piece, amount) {
   state.bag[piece] += amount;
 }
 
-function createDragGhost(piece) {
+function createDragGhost(piece, rotation) {
   const ghost = document.createElement("div");
   ghost.className = "drag-ghost";
-  ghost.innerHTML = getPieceIcon(piece);
+  ghost.innerHTML = getPieceIcon(piece, rotation);
   return ghost;
 }
 
-function getPieceIcon(piece) {
-  if (piece === "empty") {
-    return '<span class="empty-icon"></span>';
-  }
-  return `<img src="${ASSETS[piece]}" alt="">`;
+function getPieceIcon(piece, rotation = 0) {
+  return `<img class="reflector-img" src="${ASSETS[piece]}" alt="" style="transform: rotate(${rotation * 90}deg)">`;
 }
 
 function moveDragGhost(x, y) {
@@ -433,15 +471,18 @@ function moveDragGhost(x, y) {
 
 function updateDropTarget(x, y) {
   const cell = getCellAtPoint(x, y);
-  if (state.dragging.targetCell === cell) return;
+  const fieldTarget = state.dragging.source === "board" && state.dragging.moved && isPointInField(x, y);
+  if (state.dragging.targetCell === cell && state.dragging.fieldTarget === fieldTarget) return;
 
   if (state.dragging.targetCell) {
     state.dragging.targetCell.classList.remove("is-drop-target");
   }
+  elements.field.classList.toggle("is-delete-target", fieldTarget);
 
-  state.dragging.targetCell = cell;
+  state.dragging.targetCell = state.dragging.source === "bag" ? cell : null;
+  state.dragging.fieldTarget = fieldTarget;
 
-  if (cell) {
+  if (state.dragging.targetCell) {
     cell.classList.add("is-drop-target");
   }
 }
@@ -452,12 +493,18 @@ function getCellAtPoint(x, y) {
   return node.closest(".cell");
 }
 
+function isPointInField(x, y) {
+  const rect = elements.field.getBoundingClientRect();
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
 function clearDragState() {
   if (!state.dragging) return;
 
   if (state.dragging.targetCell) {
     state.dragging.targetCell.classList.remove("is-drop-target");
   }
+  elements.field.classList.remove("is-delete-target");
 
   if (state.dragging.ghost) {
     state.dragging.ghost.remove();
@@ -466,12 +513,33 @@ function clearDragState() {
   state.dragging = null;
 }
 
+function rotateBoardPiece(x, y) {
+  const block = state.board[y][x];
+  if (!block) return;
+
+  block.rotation = (block.rotation + 1) % 4;
+  renderBoard();
+  drawLaser();
+}
+
+function removeBoardPiece(x, y) {
+  const block = state.board[y][x];
+  if (!block) return;
+
+  state.board[y][x] = null;
+  addPieceToBag(block.type, 1);
+  renderBoard();
+  renderPieceBag();
+  drawLaser();
+}
+
 function renderBoard() {
   for (let y = 0; y < BOARD_SIZE; y += 1) {
     for (let x = 0; x < BOARD_SIZE; x += 1) {
       const cell = state.cells[y * BOARD_SIZE + x];
       const block = state.board[y][x];
-      cell.innerHTML = block === "empty" ? "" : `<img src="${ASSETS[block]}" alt="">`;
+      cell.classList.toggle("has-reflector", Boolean(block));
+      cell.innerHTML = block ? getPieceIcon(block.type, block.rotation) : "";
     }
   }
 }
@@ -608,8 +676,7 @@ function grantPieceRewards(defeatedCount) {
 
   for (let i = 0; i < defeatedCount; i += 1) {
     if (Math.random() > PIECE_DROP_CHANCE) continue;
-    const piece = PIECE_ORDER[1 + Math.floor(Math.random() * (PIECE_ORDER.length - 1))];
-    addPieceToBag(piece, 1);
+    addPieceToBag("reflector", 1);
     gained = true;
   }
 
@@ -648,8 +715,8 @@ function traceLaser() {
     cells.push({ x, y, direction });
 
     const block = state.board[y][x];
-    if (block !== "empty") {
-      direction = REFLECT[block][direction];
+    if (block) {
+      direction = reflectDirection(block, direction);
     }
     cells[cells.length - 1].exitDirection = direction;
     exitDirection = direction;
@@ -659,6 +726,11 @@ function traceLaser() {
   }
 
   return { cells, activeColumn, exitDirection };
+}
+
+function reflectDirection(block, direction) {
+  const rotation = ((block.rotation % 4) + 4) % 4;
+  return REFLECTOR_REFLECTIONS[rotation][direction];
 }
 
 function isInsideBoard(x, y) {
@@ -780,7 +852,7 @@ function endGame() {
 }
 
 function resetGameState() {
-  state.board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill("empty"));
+  state.board = createEmptyBoard();
   state.bag = createInitialBag();
   clearDragState();
   state.enemies = [];
@@ -943,10 +1015,12 @@ function shuffle(items) {
 
 function createInitialBag() {
   return {
-    slash: 3,
-    backslash: 3,
-    turn: 2,
+    reflector: 8,
   };
+}
+
+function createEmptyBoard() {
+  return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
 }
 
 function randomLaserInterval() {

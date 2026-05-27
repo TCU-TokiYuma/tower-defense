@@ -151,6 +151,10 @@ button {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.field.is-delete-target {
+  box-shadow: inset 0 0 0 2px rgba(240, 100, 100, 0.72);
+}
+
 .lane-grid {
   position: absolute;
   inset: 0;
@@ -264,6 +268,14 @@ button {
   touch-action: none;
 }
 
+.cell.has-reflector {
+  cursor: grab;
+}
+
+.cell.has-reflector:active {
+  cursor: grabbing;
+}
+
 .cell::after {
   content: "";
   position: absolute;
@@ -277,6 +289,7 @@ button {
   height: 72%;
   object-fit: contain;
   pointer-events: none;
+  transition: transform 140ms ease;
 }
 
 .cell:active {
@@ -359,7 +372,7 @@ button {
 
 .piece-bag {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -392,12 +405,6 @@ button {
   pointer-events: none;
 }
 
-.bag-piece.is-empty-tool {
-  border-color: var(--amber);
-  background: #342d20;
-  box-shadow: inset 0 0 0 1px rgba(239, 191, 85, 0.65);
-}
-
 .bag-piece.is-depleted {
   cursor: not-allowed;
   opacity: 0.38;
@@ -421,23 +428,6 @@ button {
 
 .bag-piece.is-gained {
   animation: gainPulse 420ms ease;
-}
-
-.empty-icon {
-  width: 30px;
-  height: 30px;
-  border: 2px solid rgba(255, 255, 255, 0.72);
-  border-radius: 5px;
-}
-
-.empty-icon::after {
-  content: "";
-  display: block;
-  width: 36px;
-  height: 2px;
-  margin: 12px 0 0 -5px;
-  background: var(--danger);
-  transform: rotate(-42deg);
 }
 
 .drag-ghost {
