@@ -1,15 +1,13 @@
 "use strict";
 
 const BOARD_SIZE = 5;
-const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
 const INITIAL_HEALTH = 300;
 const INITIAL_BAG = 7;
 const INITIAL_SPLITTER_BAG = 2;
 const BASE_DAMAGE = 4.4;
 const ATTACK_INTERVAL_SECONDS = 0.5;
 const DAMAGE_POPUP_LIFETIME = 0.5;
-const REFLECTION_LOSS = 0.88;
-const SPLITTER_OUTPUT_FACTOR = 0.72;
+const REFLECTION_ENERGY_FACTOR = 0.95;
 const MIN_LASER_ENERGY = 0.28;
 const LASER_SHIFT_MIN = 13;
 const LASER_SHIFT_MAX = 22;
@@ -18,10 +16,10 @@ const BASE_CLEAR_HEAL = 25;
 const assetUrl = (path) => new URL(path, document.baseURI).href;
 
 const ASSETS = {
-  mirror: assetUrl("../assets/mirror.png"),
-  splitter: assetUrl("../assets/splitter.png"),
-  enemy: assetUrl("../assets/enemy.svg"),
-  emitter: assetUrl("../assets/emitter.png"),
+  mirror: assetUrl("./assets/mirror.png"),
+  splitter: assetUrl("./assets/splitter.png"),
+  enemy: assetUrl("./assets/enemy.svg"),
+  emitter: assetUrl("./assets/emitter.png"),
 };
 
 const DIRECTIONS = {
@@ -157,12 +155,12 @@ const UPGRADES = [
     },
   },
   {
-    id: "loss",
+    id: "reflection",
     icon: "効",
     name: "反射効率",
-    detail: "反射後の減衰を軽減",
+    detail: "反射効率 +0.05",
     apply: () => {
-      state.reflectionLoss = Math.min(0.98, state.reflectionLoss + 0.04);
+      state.reflectionEnergyFactor = Math.min(1, roundToHundredths(state.reflectionEnergyFactor + 0.05));
     },
   },
   {
@@ -254,7 +252,7 @@ const state = {
   damage: BASE_DAMAGE,
   enemySpeedFactor: 1,
   clearHeal: BASE_CLEAR_HEAL,
-  reflectionLoss: REFLECTION_LOSS,
+  reflectionEnergyFactor: REFLECTION_ENERGY_FACTOR,
   pierce: 0,
   activeEmitter: "emitter2",
   shiftTimer: randomLaserShift(),
@@ -372,7 +370,7 @@ function resetGameState() {
   state.damage = BASE_DAMAGE;
   state.enemySpeedFactor = 1;
   state.clearHeal = BASE_CLEAR_HEAL;
-  state.reflectionLoss = REFLECTION_LOSS;
+  state.reflectionEnergyFactor = REFLECTION_ENERGY_FACTOR;
   state.pierce = 0;
   state.activeEmitter = "emitter2";
   state.shiftTimer = randomLaserShift();
@@ -556,15 +554,12 @@ function computeLaserTrace() {
       visited: new Set(),
     },
   ];
-  let processed = 0;
-
-  while (beams.length > 0 && processed < 72) {
-    processed += 1;
+  while (beams.length > 0) {
     const beam = beams.pop();
     let { x, y, direction, energy } = beam;
     const visited = new Set(beam.visited);
 
-    for (let step = 0; step < CELL_COUNT * 4; step += 1) {
+    while (true) {
       if (!isInsideBoard(x, y)) {
         if (y < 0 && direction === "up" && x >= 0 && x < BOARD_SIZE) {
           attackColumns.set(String(x), (attackColumns.get(String(x)) ?? 0) + energy);
@@ -582,14 +577,14 @@ function computeLaserTrace() {
       const block = state.board[y][x];
       if (block?.type === "mirror") {
         direction = reflect(direction, block.rotation);
-        energy *= state.reflectionLoss;
+        energy *= state.reflectionEnergyFactor;
         addBeamDirection(cellBeams, cellKey, direction, energy);
       } else if (block?.type === "splitter") {
         const outputDirections = getSplitterOutputDirections(block, direction);
         if (outputDirections.length === 0) break;
 
         for (const outputDirection of outputDirections) {
-          const nextEnergy = energy * SPLITTER_OUTPUT_FACTOR;
+          const nextEnergy = energy * state.reflectionEnergyFactor;
           if (nextEnergy < MIN_LASER_ENERGY) continue;
 
           addBeamDirection(cellBeams, cellKey, outputDirection, nextEnergy);
@@ -799,8 +794,7 @@ function getPauseStatusRows() {
     ["レーザー出力", formatStat(state.damage * ATTACK_INTERVAL_SECONDS)],
     ["攻撃間隔", `${ATTACK_INTERVAL_SECONDS.toFixed(1)} 秒`],
     ["体力", `${Math.ceil(Math.max(0, state.health))} / ${state.maxHealth}`],
-    ["反射効率", formatPercent(state.reflectionLoss)],
-    ["分岐出力", formatPercent(SPLITTER_OUTPUT_FACTOR)],
+    ["反射効率", formatPercent(state.reflectionEnergyFactor)],
     ["貫通数", String(state.pierce)],
     ["敵速度倍率", formatPercent(state.enemySpeedFactor)],
     ["クリア回復", String(state.clearHeal)],
@@ -1122,6 +1116,10 @@ function formatStat(value) {
 
 function formatPercent(value) {
   return `${Math.round(value * 100)}%`;
+}
+
+function roundToHundredths(value) {
+  return Math.round(value * 100) / 100;
 }
 
 function createEmptyBoard() {
