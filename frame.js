@@ -8,6 +8,8 @@ const BASE_DAMAGE = 4.4;
 const ATTACK_INTERVAL_SECONDS = 0.5;
 const DAMAGE_POPUP_LIFETIME = 0.5;
 const REFLECTION_ENERGY_FACTOR = 0.95;
+const REFLECTION_UPGRADE_STEP = 0.15;
+const REFLECTION_STAGE_CLEAR_DECAY = 0.01;
 const MIN_LASER_ENERGY = 0.28;
 const LASER_SHIFT_MIN = 13;
 const LASER_SHIFT_MAX = 22;
@@ -158,9 +160,9 @@ const UPGRADES = [
     id: "reflection",
     icon: "効",
     name: "反射効率",
-    detail: "反射効率 +0.05",
+    detail: "反射効率 +15%",
     apply: () => {
-      state.reflectionEnergyFactor = Math.min(1, roundToHundredths(state.reflectionEnergyFactor + 0.05));
+      adjustReflectionEfficiency(REFLECTION_UPGRADE_STEP);
     },
   },
   {
@@ -538,6 +540,7 @@ function resolveStage() {
   if (state.spawnQueue.length > 0 || state.enemies.length > 0 || state.spawnedCount < state.stageTarget) return;
 
   state.health = Math.min(state.maxHealth, state.health + state.clearHeal);
+  adjustReflectionEfficiency(-REFLECTION_STAGE_CLEAR_DECAY);
   showUpgrade();
 }
 
@@ -1120,6 +1123,10 @@ function formatPercent(value) {
 
 function roundToHundredths(value) {
   return Math.round(value * 100) / 100;
+}
+
+function adjustReflectionEfficiency(amount) {
+  state.reflectionEnergyFactor = Math.max(0, roundToHundredths(state.reflectionEnergyFactor + amount));
 }
 
 function createEmptyBoard() {
