@@ -3,17 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>ゲーム</title>
+    <title>屈折ローグ Frame</title>
     <link rel="stylesheet" href="./frame.css" />
   </head>
 
   <body>
     <div id="main-area">
       <div id="header">
-        <h1 id="title">ゲーム</h1>
+        <h1 id="title">屈折ローグ</h1>
         <div id="status">
           <div id="stage" class="status-block"><span class="head">STAGE</span><span class="num">1</span></div>
           <div id="score" class="status-block"><span class="head">SCORE</span><span class="num">0</span></div>
+          <div id="laser-timer" class="status-block"><span class="head">SHIFT</span><span class="num">--</span></div>
         </div>
       </div>
       <div id="field">
@@ -32,6 +33,7 @@
         <div id="enemy4" class="enemies-layer" laser-type="0" laser-damage="0">
           <!-- 敵をdivで挿入 -->
         </div>
+        <div id="field-label">第1面</div>
       </div>
       <div id="hp">
         <div id="hp-text">300/300</div>
@@ -41,11 +43,11 @@
       </div>
       <div id="board">
         <div id="emitter-area-left">
-          <div id="emitter5" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 5" width="100%"></div>
-          <div id="emitter6" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 6" width="100%"></div>
-          <div id="emitter7" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 7" width="100%"></div>
-          <div id="emitter8" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 8" width="100%"></div>
-          <div id="emitter9" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 9" width="100%"></div>
+          <div id="emitter5" class="emitter emitter-left" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 5" width="100%"></div>
+          <div id="emitter6" class="emitter emitter-left" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 6" width="100%"></div>
+          <div id="emitter7" class="emitter emitter-left" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 7" width="100%"></div>
+          <div id="emitter8" class="emitter emitter-left" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 8" width="100%"></div>
+          <div id="emitter9" class="emitter emitter-left" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 9" width="100%"></div>
         </div>
 
         <div id="grid">
@@ -206,11 +208,11 @@
         </div>
 
         <div id="emitter-area-right">
-          <div id="emitter10" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 10" width="100%"></div>
-          <div id="emitter11" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 11" width="100%"></div>
-          <div id="emitter12" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 12" width="100%"></div>
-          <div id="emitter13" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 13" width="100%"></div>
-          <div id="emitter14" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 14" width="100%"></div>
+          <div id="emitter10" class="emitter emitter-right" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 10" width="100%"></div>
+          <div id="emitter11" class="emitter emitter-right" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 11" width="100%"></div>
+          <div id="emitter12" class="emitter emitter-right" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 12" width="100%"></div>
+          <div id="emitter13" class="emitter emitter-right" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 13" width="100%"></div>
+          <div id="emitter14" class="emitter emitter-right" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 14" width="100%"></div>
         </div>
       </div>
       <div id="emitter-area-bottom">
@@ -226,6 +228,16 @@
         </div>
         <button id="pause">一時停止</button>
       </div>
+      <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="overlay-panel">
+          <p id="overlay-kicker" class="overlay-kicker">屈折防衛</p>
+          <h2 id="overlay-title">屈折ローグ</h2>
+          <p id="overlay-body" class="overlay-body"></p>
+          <div id="upgrade-options" class="upgrade-options"></div>
+          <button id="overlay-action" class="overlay-action" type="button">開始</button>
+        </div>
+      </div>
     </div>
+    <script src="./frame.js"></script>
   </body>
 </html>
