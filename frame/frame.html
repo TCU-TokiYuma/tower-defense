@@ -23,7 +23,7 @@
         <div id="enemy1" class="enemies-layer" laser-type="0" laser-damage="0">
           <!-- 敵をdivで挿入 -->
         </div>
-        <div id="enemy2" class="enemies-layer" laser-type="1" laser-damage="0">
+        <div id="enemy2" class="enemies-layer" laser-type="0" laser-damage="0">
           <!-- 敵をdivで挿入 -->
         </div>
         <div id="enemy3" class="enemies-layer" laser-type="0" laser-damage="0">
@@ -41,18 +41,189 @@
       </div>
       <div id="board">
         <div id="emitter-area-left">
-          <div id="emitter0" class="emitter emitter-left" data-state="0"><img src="../assets/emitter.png" alt="emitter 0" width="100%"></div>
-          <div id="emitter1" class="emitter emitter-left" data-state="0"><img src="../assets/emitter.png" alt="emitter 1" width="100%"></div>
-          <div id="emitter2" class="emitter emitter-left" data-state="0"><img src="../assets/emitter.png" alt="emitter 2" width="100%"></div>
-          <div id="emitter3" class="emitter emitter-left" data-state="0"><img src="../assets/emitter.png" alt="emitter 3" width="100%"></div>
-          <div id="emitter4" class="emitter emitter-left" data-state="0"><img src="../assets/emitter.png" alt="emitter 4" width="100%"></div>
+          <div id="emitter5" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 5" width="100%"></div>
+          <div id="emitter6" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 6" width="100%"></div>
+          <div id="emitter7" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 7" width="100%"></div>
+          <div id="emitter8" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 8" width="100%"></div>
+          <div id="emitter9" class="emitter emitter-left" emitter-state=""><img src="../assets/emitter.png" alt="emitter 9" width="100%"></div>
         </div>
-        <div id="grid"></div>
-        <div id="emitter-area-right"></div>
+
+        <div id="grid">
+          <div id="sell-00" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-01" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-02" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-03" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-04" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+
+          <div id="sell-10" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-11" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-12" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-13" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-14" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+
+          <div id="sell-20" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-21" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-22" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-23" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-24" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+
+          <div id="sell-30" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-31" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-32" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-33" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-34" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+
+          <div id="sell-40" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-41" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-42" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-43" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+          <div id="sell-44" class="cell" cell-type="0">
+            <div class="laser direction-0" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-1" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-2" laser-type="0" laser-damage="0"></div>
+            <div class="laser direction-3" laser-type="0" laser-damage="0"></div>
+          </div>
+        </div>
+
+        <div id="emitter-area-right">
+          <div id="emitter10" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 10" width="100%"></div>
+          <div id="emitter11" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 11" width="100%"></div>
+          <div id="emitter12" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 12" width="100%"></div>
+          <div id="emitter13" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 13" width="100%"></div>
+          <div id="emitter14" class="emitter emitter-right" emitter-state=""><img src="../assets/emitter.png" alt="emitter 14" width="100%"></div>
+        </div>
       </div>
-      <div id="emitter-area-bottom"></div>
+      <div id="emitter-area-bottom">
+        <div id="emitter0" class="emitter emitter-bottom" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 0" width="100%"></div>
+        <div id="emitter1" class="emitter emitter-bottom" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 1" width="100%"></div>
+        <div id="emitter2" class="emitter emitter-bottom" emitter-state="1"><img src="../assets/emitter.png" alt="emitter 2" width="100%"></div>
+        <div id="emitter3" class="emitter emitter-bottom" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 3" width="100%"></div>
+        <div id="emitter4" class="emitter emitter-bottom" emitter-state="0"><img src="../assets/emitter.png" alt="emitter 4" width="100%"></div>
+      </div>
       <div id="footer">
-        <div id="bag"></div>
+        <div id="bag">
+          <div id="mirror" class="item"><img src="../assets/mirror.png" alt="反射板"></div>
+        </div>
         <button id="pause">一時停止</button>
       </div>
     </div>
