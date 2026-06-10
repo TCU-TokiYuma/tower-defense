@@ -275,6 +275,7 @@ const state = {
 };
 
 function setup() {
+  disableViewportZoom();
   buildBoard();
   buildEmitters();
   bindControls();
@@ -287,6 +288,40 @@ function setup() {
   loadEnemyCatalog().then((catalog) => {
     state.enemyCatalog = catalog;
   });
+}
+
+function disableViewportZoom() {
+  let lastTouchEndAt = 0;
+
+  const preventZoomGesture = (event) => {
+    event.preventDefault();
+  };
+
+  document.addEventListener("gesturestart", preventZoomGesture, { passive: false });
+  document.addEventListener("gesturechange", preventZoomGesture, { passive: false });
+  document.addEventListener("gestureend", preventZoomGesture, { passive: false });
+
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+
+  document.addEventListener(
+    "touchend",
+    (event) => {
+      const now = Date.now();
+      if (now - lastTouchEndAt < 350) {
+        event.preventDefault();
+      }
+      lastTouchEndAt = now;
+    },
+    { passive: false },
+  );
 }
 
 function buildBoard() {
