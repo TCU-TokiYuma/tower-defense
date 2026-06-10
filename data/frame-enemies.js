@@ -1,0 +1,40 @@
+"use strict";
+
+window.FRAME_ENEMY_TYPES = [
+  {
+    id: "basic",
+    name: "侵入体",
+    hp: 8,
+    hpGrow: 1.7,
+    speed: 11,
+    speedGrow: 0.28,
+    attack: 9,
+    score: 85,
+    minStage: 1,
+    weight: 70,
+  },
+  {
+    id: "fast",
+    name: "突撃体",
+    hp: 5.5,
+    hpGrow: 1.1,
+    speed: 17,
+    speedGrow: 0.34,
+    attack: 7,
+    score: 105,
+    minStage: 2,
+    weight: 28,
+  },
+  {
+    id: "tank",
+    name: "重装体",
+    hp: 15,
+    hpGrow: 2.8,
+    speed: 7.5,
+    speedGrow: 0.14,
+    attack: 18,
+    score: 155,
+    minStage: 3,
+    weight: 16,
+  },
+];

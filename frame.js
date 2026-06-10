@@ -2,15 +2,14 @@
 
 const BOARD_SIZE = 5;
 const INITIAL_HEALTH = 300;
-const INITIAL_BAG = 7;
-const INITIAL_SPLITTER_BAG = 2;
-const BASE_DAMAGE = 4.4;
-const ATTACK_INTERVAL_SECONDS = 0.5;
+const INITIAL_BAG = 5;
+const INITIAL_SPLITTER_BAG = 1;
+const BASE_DAMAGE = 3;
+const ATTACK_INTERVAL_SECONDS = 0.2;
 const DAMAGE_POPUP_LIFETIME = 0.5;
-const REFLECTION_ENERGY_FACTOR = 0.95;
-const REFLECTION_UPGRADE_STEP = 0.15;
+const REFLECTION_ENERGY_FACTOR = 1;
 const REFLECTION_STAGE_CLEAR_DECAY = 0.01;
-const MIN_LASER_ENERGY = 0.28;
+const MIN_LASER_ENERGY = 0.1;
 const LASER_SHIFT_MIN = 13;
 const LASER_SHIFT_MAX = 22;
 const BASE_CLEAR_HEAL = 25;
@@ -107,111 +106,8 @@ const SCREENS = {
   RESULT: "result",
 };
 
-const ENEMY_TYPES = [
-  {
-    id: "basic",
-    name: "侵入体",
-    hp: 8,
-    hpGrow: 1.7,
-    speed: 11,
-    speedGrow: 0.28,
-    attack: 9,
-    score: 85,
-    minStage: 1,
-    weight: 70,
-  },
-  {
-    id: "fast",
-    name: "突撃体",
-    hp: 5.5,
-    hpGrow: 1.1,
-    speed: 17,
-    speedGrow: 0.34,
-    attack: 7,
-    score: 105,
-    minStage: 2,
-    weight: 28,
-  },
-  {
-    id: "tank",
-    name: "重装体",
-    hp: 15,
-    hpGrow: 2.8,
-    speed: 7.5,
-    speedGrow: 0.14,
-    attack: 18,
-    score: 155,
-    minStage: 3,
-    weight: 16,
-  },
-];
-
-const UPGRADES = [
-  {
-    id: "damage",
-    icon: "攻",
-    name: "出力増幅",
-    detail: "レーザー基礎威力 +24%",
-    apply: () => {
-      state.damage *= 1.24;
-    },
-  },
-  {
-    id: "reflection",
-    icon: "効",
-    name: "反射効率",
-    detail: "反射効率 +15%",
-    apply: () => {
-      adjustReflectionEfficiency(REFLECTION_UPGRADE_STEP);
-    },
-  },
-  {
-    id: "mirror",
-    icon: "鏡",
-    name: "反射板補充",
-    detail: "反射板 +3",
-    apply: () => {
-      state.bag.mirror += 3;
-    },
-  },
-  {
-    id: "splitter",
-    icon: "分",
-    name: "分岐器補充",
-    detail: "分岐器 +1",
-    apply: () => {
-      state.bag.splitter += 1;
-    },
-  },
-  {
-    id: "slow",
-    icon: "遅",
-    name: "遅延場",
-    detail: "敵の降下速度 -9%",
-    apply: () => {
-      state.enemySpeedFactor *= 0.91;
-    },
-  },
-  {
-    id: "repair",
-    icon: "修",
-    name: "自陣修復",
-    detail: "最大体力 +20，体力 +35",
-    apply: () => {
-      state.maxHealth += 20;
-      state.health = Math.min(state.maxHealth, state.health + 35);
-    },
-  },
-  {
-    id: "clearHeal",
-    icon: "保",
-    name: "保全手順",
-    detail: "ステージクリア回復 +15",
-    apply: () => {
-      state.clearHeal += 15;
-    },
-  },
-];
+const ENEMY_TYPES = window.FRAME_ENEMY_TYPES ?? [];
+const UPGRADES = window.FRAME_UPGRADES ?? [];
 
 const elements = {
   main: document.getElementById("main-area"),
@@ -828,7 +724,7 @@ function showUpgrade() {
       </span>
     `;
     button.addEventListener("click", () => {
-      upgrade.apply();
+      applyUpgradeEffect(upgrade);
       renderBag();
       startStage(state.stage + 1);
       state.screen = SCREENS.PLAY;
@@ -838,6 +734,31 @@ function showUpgrade() {
   }
 
   elements.overlay.classList.remove("hidden");
+}
+
+function applyUpgradeEffect(upgrade) {
+  const effect = upgrade.effect ?? {};
+
+  switch (effect.type) {
+    case "multiplyState":
+      state[effect.key] *= effect.factor;
+      break;
+    case "addState":
+      state[effect.key] += effect.amount;
+      break;
+    case "adjustReflection":
+      adjustReflectionEfficiency(effect.amount);
+      break;
+    case "addBag":
+      state.bag[effect.piece] = (state.bag[effect.piece] ?? 0) + effect.amount;
+      break;
+    case "repair":
+      state.maxHealth += effect.maxHealth;
+      state.health = Math.min(state.maxHealth, state.health + effect.health);
+      break;
+    default:
+      console.warn(`Unknown upgrade effect: ${upgrade.id}`);
+  }
 }
 
 function endGame() {
