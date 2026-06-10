@@ -1,7 +1,7 @@
 {
   "id": "fast",
-  "name": "突撃体",
-  "asset": "assets/enemy.svg",
+  "name": "俊敏エネミー",
+  "asset": "assets/enemy-blue.svg",
   "baseSpeed": 18,
   "baseHealth": 3.6,
   "healthPerLevel": 0.65,

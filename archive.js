@@ -48,8 +48,8 @@ const ENEMY_DATA_FILES = [
 const ENEMY_FALLBACK = [
   {
     id: "basic",
-    name: "侵入体",
-    asset: "assets/enemy.svg",
+    name: "通常エネミー",
+    asset: "assets/enemy-yellow.svg",
     baseSpeed: 13,
     baseHealth: 4.8,
     healthPerLevel: 0.9,
@@ -62,8 +62,8 @@ const ENEMY_FALLBACK = [
   },
   {
     id: "fast",
-    name: "突撃体",
-    asset: "assets/enemy.svg",
+    name: "俊敏エネミー",
+    asset: "assets/enemy-blue.svg",
     baseSpeed: 18,
     baseHealth: 3.6,
     healthPerLevel: 0.65,
@@ -76,7 +76,7 @@ const ENEMY_FALLBACK = [
   },
   {
     id: "tank",
-    name: "重装体",
+    name: "頑丈エネミー",
     asset: "assets/enemy.svg",
     baseSpeed: 8,
     baseHealth: 9,

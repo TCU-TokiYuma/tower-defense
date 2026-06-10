@@ -290,7 +290,7 @@ function startStage(stageNumber) {
   state.stageTarget = state.spawnQueue.length;
   state.spawnedCount = 0;
   state.spawnTimer = 0.45;
-  elements.fieldLabel.textContent = `第${stageNumber}面 / 侵入体 ${state.stageTarget}`;
+  elements.fieldLabel.textContent = `第${stageNumber}面 / エネミー ${state.stageTarget}`;
 }
 
 function updateLaserShift(dt) {
@@ -318,6 +318,7 @@ function spawnEnemies(dt) {
     id: state.enemyId,
     type: enemyType.id,
     name: enemyType.name,
+    asset: assetUrl(enemyType.asset || "./assets/enemy.svg"),
     lane,
     y: -8,
     hp,
@@ -587,7 +588,7 @@ function renderEnemies() {
     node.style.top = `${enemy.y}%`;
     node.title = `${enemy.name} / HP ${Math.ceil(enemy.hp)}`;
     node.innerHTML = `
-      <img src="${ASSETS.enemy}" alt="">
+      <img src="${enemy.asset ?? ASSETS.enemy}" alt="">
       ${damagePopupHtml}
       <div class="enemy-hp"><span style="width: ${hpRatio * 100}%"></span></div>
     `;
@@ -668,7 +669,7 @@ function showStart() {
   state.screen = SCREENS.START;
   elements.overlayKicker.textContent = "屈折防衛";
   elements.overlayTitle.textContent = "屈折ローグ";
-  elements.overlayBody.textContent = "反射板と分岐器でレーザー経路を組み替え，侵入体を防衛してください。";
+  elements.overlayBody.textContent = "反射板と分岐器でレーザー経路を組み替え，エネミーの侵入を防いでください。";
   elements.overlayAction.textContent = "開始";
   elements.overlayAction.hidden = false;
   elements.upgradeOptions.innerHTML = "";

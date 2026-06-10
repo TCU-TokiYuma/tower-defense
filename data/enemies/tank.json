@@ -1,6 +1,6 @@
 {
   "id": "tank",
-  "name": "重装体",
+  "name": "頑丈エネミー",
   "asset": "assets/enemy.svg",
   "baseSpeed": 8,
   "baseHealth": 9,

@@ -1,7 +1,7 @@
 {
   "id": "basic",
-  "name": "侵入体",
-  "asset": "assets/enemy.svg",
+  "name": "通常エネミー",
+  "asset": "assets/enemy-yellow.svg",
   "baseSpeed": 13,
   "baseHealth": 4.8,
   "healthPerLevel": 0.9,

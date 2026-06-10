@@ -3,7 +3,8 @@
 window.FRAME_ENEMY_TYPES = [
   {
     id: "basic",
-    name: "侵入体",
+    name: "通常エネミー",
+    asset: "./assets/enemy-yellow.svg",
     hp: 8,
     hpGrow: 1.7,
     speed: 11,
@@ -15,7 +16,8 @@ window.FRAME_ENEMY_TYPES = [
   },
   {
     id: "fast",
-    name: "突撃体",
+    name: "俊敏エネミー",
+    asset: "./assets/enemy-blue.svg",
     hp: 5.5,
     hpGrow: 1.1,
     speed: 17,
@@ -27,7 +29,8 @@ window.FRAME_ENEMY_TYPES = [
   },
   {
     id: "tank",
-    name: "重装体",
+    name: "頑丈エネミー",
+    asset: "./assets/enemy.svg",
     hp: 15,
     hpGrow: 2.8,
     speed: 7.5,
