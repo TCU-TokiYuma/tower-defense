@@ -706,7 +706,7 @@ function resumeGame() {
 function showStart() {
   state.screen = SCREENS.START;
   elements.overlayKicker.textContent = "屈折防衛";
-  elements.overlayTitle.textContent = "屈折ローグ";
+  elements.overlayTitle.textContent = "ローグサバイバル";
   elements.overlayBody.textContent = "反射板と分岐器でレーザー経路を組み替え，エネミーの侵入を防いでください。";
   elements.overlayAction.textContent = "開始";
   elements.overlayAction.hidden = false;
