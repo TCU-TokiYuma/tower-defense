@@ -164,7 +164,7 @@ const state = {
 };
 
 function setup() {
-  disableViewportZoom();
+  disableNativeTouchInteractions();
   collectCells();
   bindControls();
   resetGameState();
@@ -172,16 +172,19 @@ function setup() {
   requestAnimationFrame(loop);
 }
 
-function disableViewportZoom() {
+function disableNativeTouchInteractions() {
   let lastTouchEndAt = 0;
 
-  const preventZoomGesture = (event) => {
+  const preventDefaultInteraction = (event) => {
     event.preventDefault();
   };
 
-  document.addEventListener("gesturestart", preventZoomGesture, { passive: false });
-  document.addEventListener("gesturechange", preventZoomGesture, { passive: false });
-  document.addEventListener("gestureend", preventZoomGesture, { passive: false });
+  document.addEventListener("contextmenu", preventDefaultInteraction);
+  document.addEventListener("selectstart", preventDefaultInteraction);
+  document.addEventListener("dragstart", preventDefaultInteraction);
+  document.addEventListener("gesturestart", preventDefaultInteraction, { passive: false });
+  document.addEventListener("gesturechange", preventDefaultInteraction, { passive: false });
+  document.addEventListener("gestureend", preventDefaultInteraction, { passive: false });
 
   document.addEventListener(
     "touchmove",
