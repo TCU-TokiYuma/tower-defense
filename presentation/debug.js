@@ -161,12 +161,15 @@ const state = {
   enemyId: 1,
   damagePopupId: 1,
   hitEnemyIds: new Set(),
+  debugEmitterLocked: false,
+  debugEnemySpawnsStopped: false,
 };
 
 function setup() {
   disableNativeTouchInteractions();
   collectCells();
   bindControls();
+  exposeDebugApi();
   resetGameState();
   showStart();
   requestAnimationFrame(loop);
@@ -315,6 +318,8 @@ function resetGameState() {
   state.enemyId = 1;
   state.damagePopupId = 1;
   state.hitEnemyIds = new Set();
+  state.debugEmitterLocked = false;
+  state.debugEnemySpawnsStopped = false;
   clearDragState();
   renderBoard();
   renderBag();
@@ -332,6 +337,8 @@ function startStage(stageNumber) {
 }
 
 function updateLaserShift(dt) {
+  if (state.debugEmitterLocked) return;
+
   state.shiftTimer -= dt;
   if (state.shiftTimer > 0) return;
 
@@ -340,6 +347,7 @@ function updateLaserShift(dt) {
 }
 
 function spawnEnemies(dt) {
+  if (state.debugEnemySpawnsStopped) return;
   if (state.spawnQueue.length === 0) return;
 
   const interval = Math.max(0.42, 1.08 - state.stage * 0.035);
@@ -347,29 +355,36 @@ function spawnEnemies(dt) {
   if (state.spawnTimer > 0) return;
 
   const enemyType = state.spawnQueue.shift();
+  const lane = Math.floor(Math.random() * BOARD_SIZE);
+
+  spawnEnemyNow(enemyType, lane);
+  state.spawnedCount += 1;
+  state.spawnTimer = interval;
+}
+
+function spawnEnemyNow(enemyType, lane, options = {}) {
   const level = Math.max(0, state.stage - 1);
   const hp = enemyType.hp + enemyType.hpGrow * level;
   const speed = (enemyType.speed + enemyType.speedGrow * level) * state.enemySpeedFactor;
-  const lane = Math.floor(Math.random() * BOARD_SIZE);
 
-  state.enemies.push({
+  const enemy = {
     id: state.enemyId,
     type: enemyType.id,
     name: enemyType.name,
     asset: assetUrl(enemyType.asset || "./assets/enemy.svg"),
     lane,
-    y: -8,
+    y: Number.isFinite(options.y) ? options.y : -8,
     hp,
     maxHp: hp,
     displayHp: hp,
     speed,
     attack: enemyType.attack + Math.round(level * 1.15),
     score: enemyType.score,
-  });
+  };
 
+  state.enemies.push(enemy);
   state.enemyId += 1;
-  state.spawnedCount += 1;
-  state.spawnTimer = interval;
+  return enemy;
 }
 
 function moveEnemies(dt) {
@@ -685,7 +700,13 @@ function renderEmitters() {
 function updateHud() {
   elements.stage.textContent = String(state.stage);
   elements.score.textContent = String(state.score);
-  elements.laserTimer.textContent = state.screen === SCREENS.PLAY ? `${Math.ceil(Math.max(0, state.shiftTimer))}s` : "--";
+  if (state.screen !== SCREENS.PLAY) {
+    elements.laserTimer.textContent = "--";
+  } else if (state.debugEmitterLocked) {
+    elements.laserTimer.textContent = "LOCK";
+  } else {
+    elements.laserTimer.textContent = `${Math.ceil(Math.max(0, state.shiftTimer))}s`;
+  }
   elements.hpText.textContent = `${Math.ceil(Math.max(0, state.health))}/${state.maxHealth}`;
   elements.hpFill.style.width = `${getHealthRatio() * 100}%`;
   elements.pause.disabled = state.screen !== SCREENS.PLAY;
@@ -1051,6 +1072,273 @@ function pickNextEmitter() {
 
 function getActiveEmitterSource() {
   return EMITTER_SOURCES.find((source) => source.id === state.activeEmitter) ?? EMITTER_SOURCES[2];
+}
+
+function exposeDebugApi() {
+  // プレゼン撮影用に、DevTools から操作する最小限のデバッグAPIを公開します。
+  const api = {
+    emitters: getDebugEmitters,
+    getState: getDebugState,
+    setEmitter: setDebugEmitter,
+    switchEmitter: setDebugEmitter,
+    lockEmitter: (emitter) => setDebugEmitter(emitter, { lock: true }),
+    unlockEmitter: unlockDebugEmitter,
+    enemyTypes: getDebugEnemyTypes,
+    stopEnemySpawns: stopDebugEnemySpawns,
+    resumeEnemySpawns: resumeDebugEnemySpawns,
+    stopSpawns: stopDebugEnemySpawns,
+    resumeSpawns: resumeDebugEnemySpawns,
+    spawnEnemy: spawnDebugEnemy,
+    spawn: spawnDebugEnemy,
+    pieceTypes: getDebugPieceTypes,
+    pieces: getDebugPieces,
+    setHealth: setDebugHealth,
+    setMaxHealth: setDebugMaxHealth,
+    setPieceCount: setDebugPieceCount,
+    setPieces: setDebugPieces,
+  };
+
+  window.LogSabaDebug = api;
+  window.logSabaDebug = api;
+  console.info(
+    "LogSabaDebug ready: setEmitter(7), spawnEnemy('tank', 2), setHealth(120), setPieces({ mirror: 6 })",
+  );
+}
+
+function getDebugEmitters() {
+  return EMITTER_SOURCES.map(({ id, edge, lane, x, y, direction }) => ({
+    id,
+    edge,
+    lane,
+    x,
+    y,
+    direction,
+    active: id === state.activeEmitter,
+  }));
+}
+
+function getDebugState() {
+  return {
+    screen: state.screen,
+    activeEmitter: state.activeEmitter,
+    shiftTimer: state.debugEmitterLocked ? null : roundToHundredths(Math.max(0, state.shiftTimer)),
+    emitterLocked: state.debugEmitterLocked,
+    enemySpawnsStopped: state.debugEnemySpawnsStopped,
+    queuedEnemies: state.spawnQueue.length,
+    activeEnemies: state.enemies.length,
+    stage: state.stage,
+    score: state.score,
+    health: Math.ceil(Math.max(0, state.health)),
+    maxHealth: state.maxHealth,
+    pieces: getDebugPieces(),
+    paused: state.paused,
+  };
+}
+
+function setDebugEmitter(emitter, options = {}) {
+  const emitterId = normalizeEmitterId(emitter);
+  const lock = options.lock === true || state.debugEmitterLocked;
+  state.activeEmitter = emitterId;
+  state.debugEmitterLocked = lock;
+  state.shiftTimer = lock ? Number.POSITIVE_INFINITY : getDebugShiftSeconds(options.shiftSeconds);
+  redrawLaserForDebug();
+  return getDebugState();
+}
+
+function unlockDebugEmitter(options = {}) {
+  state.debugEmitterLocked = false;
+  state.shiftTimer = getDebugShiftSeconds(options.shiftSeconds);
+  updateHud();
+  return getDebugState();
+}
+
+function getDebugEnemyTypes() {
+  return ENEMY_TYPES.map(({ id, name, minStage, hp, speed, attack, score }) => ({
+    id,
+    name,
+    minStage,
+    hp,
+    speed,
+    attack,
+    score,
+  }));
+}
+
+function stopDebugEnemySpawns() {
+  state.debugEnemySpawnsStopped = true;
+  return getDebugState();
+}
+
+function resumeDebugEnemySpawns() {
+  state.debugEnemySpawnsStopped = false;
+  return getDebugState();
+}
+
+function spawnDebugEnemy(typeOrOptions, laneArg, optionsArg = {}) {
+  const options = normalizeSpawnEnemyOptions(typeOrOptions, laneArg, optionsArg);
+  const enemyType = normalizeEnemyType(options.type);
+  const lane = normalizeEnemyLane(options.lane);
+  const enemy = spawnEnemyNow(enemyType, lane, options);
+  renderEnemies();
+  return {
+    enemy: {
+      id: enemy.id,
+      type: enemy.type,
+      name: enemy.name,
+      lane: enemy.lane,
+      y: enemy.y,
+      hp: roundToHundredths(enemy.hp),
+      speed: roundToHundredths(enemy.speed),
+      attack: enemy.attack,
+    },
+    state: getDebugState(),
+  };
+}
+
+function getDebugPieceTypes() {
+  return PIECE_ORDER.map((id) => ({
+    id,
+    label: PIECE_META[id]?.label ?? id,
+    count: state.bag[id] ?? 0,
+  }));
+}
+
+function getDebugPieces() {
+  return Object.fromEntries(PIECE_ORDER.map((piece) => [piece, state.bag[piece] ?? 0]));
+}
+
+function setDebugHealth(valueOrOptions, optionsArg = {}) {
+  const options = normalizeHealthOptions(valueOrOptions, optionsArg);
+
+  if (options.maxHealth !== undefined) {
+    state.maxHealth = normalizeHealthValue(options.maxHealth, "maxHealth");
+  }
+
+  const nextHealth = normalizeHealthValue(options.health, "health");
+  state.health = Math.min(state.maxHealth, nextHealth);
+  updateHud();
+  return getDebugState();
+}
+
+function setDebugMaxHealth(value, options = {}) {
+  state.maxHealth = normalizeHealthValue(value, "maxHealth");
+
+  if (options.keepHealth !== true) {
+    state.health = Math.min(state.health, state.maxHealth);
+  }
+
+  updateHud();
+  return getDebugState();
+}
+
+function setDebugPieceCount(piece, count) {
+  const pieceId = normalizePieceId(piece);
+  state.bag[pieceId] = normalizePieceCount(count);
+  renderBag();
+  return getDebugState();
+}
+
+function setDebugPieces(counts) {
+  if (typeof counts !== "object" || counts === null) {
+    throw new TypeError("setPieces expects an object such as { mirror: 6, splitter: 2 }.");
+  }
+
+  for (const [piece, count] of Object.entries(counts)) {
+    state.bag[normalizePieceId(piece)] = normalizePieceCount(count);
+  }
+
+  renderBag();
+  return getDebugState();
+}
+
+function normalizeSpawnEnemyOptions(typeOrOptions, laneArg, optionsArg) {
+  if (typeof typeOrOptions === "object" && typeOrOptions !== null) {
+    return { ...typeOrOptions };
+  }
+  return { ...optionsArg, type: typeOrOptions, lane: laneArg };
+}
+
+function normalizeEnemyType(type) {
+  const text = String(type ?? "").trim();
+  const enemyType = ENEMY_TYPES.find((enemy) => enemy.id === text || enemy.name === text);
+  if (enemyType) return enemyType;
+
+  const validTypes = ENEMY_TYPES.map((enemy) => enemy.id).join(", ");
+  throw new RangeError(`Unknown enemy type: ${text}. Valid enemy types: ${validTypes}`);
+}
+
+function normalizeEnemyLane(lane) {
+  const text = String(lane ?? "").trim();
+  const match = text.match(/^(?:lane|enemy)?([0-4])$/i);
+  const laneNumber = match ? Number(match[1]) : Number(lane);
+
+  if (Number.isInteger(laneNumber) && laneNumber >= 0 && laneNumber < BOARD_SIZE) {
+    return laneNumber;
+  }
+
+  throw new RangeError(`Unknown lane: ${text}. Use lane 0-${BOARD_SIZE - 1}.`);
+}
+
+function normalizeHealthOptions(valueOrOptions, optionsArg) {
+  if (typeof valueOrOptions === "object" && valueOrOptions !== null) {
+    return {
+      ...valueOrOptions,
+      health: valueOrOptions.health ?? valueOrOptions.value,
+    };
+  }
+  return { ...optionsArg, health: valueOrOptions };
+}
+
+function normalizeHealthValue(value, label) {
+  const number = Number(value);
+  if (Number.isFinite(number) && number >= 0) {
+    return number;
+  }
+  throw new RangeError(`${label} must be a finite number greater than or equal to 0.`);
+}
+
+function normalizePieceId(piece) {
+  const text = String(piece ?? "").trim();
+  if (PIECE_ORDER.includes(text)) return text;
+
+  const pieceByLabel = PIECE_ORDER.find((id) => PIECE_META[id]?.label === text);
+  if (pieceByLabel) return pieceByLabel;
+
+  throw new RangeError(`Unknown piece: ${text}. Valid pieces: ${PIECE_ORDER.join(", ")}`);
+}
+
+function normalizePieceCount(count) {
+  const number = Number(count);
+  if (Number.isFinite(number) && number >= 0) {
+    return Math.floor(number);
+  }
+  throw new RangeError("Piece count must be a finite number greater than or equal to 0.");
+}
+
+function normalizeEmitterId(emitter) {
+  const raw = typeof emitter === "number" ? String(emitter) : String(emitter ?? "").trim();
+  const emitterId = /^\d+$/.test(raw) ? `emitter${raw}` : raw;
+
+  if (EMITTER_SOURCES.some((source) => source.id === emitterId)) {
+    return emitterId;
+  }
+
+  const validIds = EMITTER_SOURCES.map((source) => source.id).join(", ");
+  throw new RangeError(`Unknown emitter: ${raw}. Valid emitters: ${validIds}`);
+}
+
+function getDebugShiftSeconds(value) {
+  if (Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return randomLaserShift();
+}
+
+function redrawLaserForDebug() {
+  const trace = computeLaserTrace();
+  renderLaser(trace);
+  renderEmitters();
+  updateHud();
 }
 
 function getPieceAsset(piece) {
