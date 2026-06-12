@@ -707,7 +707,7 @@ function showStart() {
   state.screen = SCREENS.START;
   elements.overlayKicker.textContent = "屈折防衛";
   elements.overlayTitle.textContent = "ローグサバイバル";
-  elements.overlayBody.textContent = "反射板と分岐器でレーザー経路を組み替え，エネミーの侵入を防いでください。";
+  elements.overlayBody.textContent = "反射板と分岐器でレーザー経路を組み替え、敵の侵入を防げ！";
   elements.overlayAction.textContent = "開始";
   elements.overlayAction.hidden = false;
   elements.upgradeOptions.innerHTML = "";
@@ -747,7 +747,7 @@ function showUpgrade() {
   elements.pause.textContent = "一時停止";
   elements.overlayKicker.textContent = "ステージクリア";
   elements.overlayTitle.textContent = "強化を選択";
-  elements.overlayBody.textContent = `体力を ${state.clearHeal} 回復しました。`;
+  elements.overlayBody.textContent = `体力を ${state.clearHeal} 回復しました`;
   elements.overlayAction.hidden = true;
   elements.upgradeOptions.innerHTML = "";
 
