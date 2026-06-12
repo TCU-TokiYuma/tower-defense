@@ -669,14 +669,11 @@ button {
 .overlay-panel {
   width: 100%;
   max-width: calc(var(--b) * 10.3);
-  max-height: calc(100% - var(--b) * 1.2);
   padding: calc(var(--b) * 0.52);
-  overflow-y: auto;
   background: #181d1a;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
-  overscroll-behavior: contain;
 }
 
 .overlay-kicker {
@@ -698,76 +695,6 @@ button {
   font-size: clamp(11px, calc(var(--b) * 0.36), 15px);
   font-weight: 700;
   line-height: 1.45;
-}
-
-.start-guide {
-  counter-reset: start-guide;
-  display: grid;
-  gap: 0;
-  margin: 0 0 calc(var(--b) * 0.38);
-  padding: 0;
-  list-style: none;
-}
-
-.start-guide[hidden] {
-  display: none;
-}
-
-.start-guide li {
-  counter-increment: start-guide;
-  display: grid;
-  grid-template-columns: calc(var(--b) * 0.78) 1fr;
-  gap: calc(var(--b) * 0.22);
-  align-items: start;
-  min-width: 0;
-  padding: calc(var(--b) * 0.18) 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.start-guide li:last-child {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.start-guide-index {
-  display: grid;
-  place-items: center;
-  width: calc(var(--b) * 0.62);
-  height: calc(var(--b) * 0.62);
-  margin-top: calc(var(--b) * 0.03);
-  background: var(--green);
-  border-radius: 999px;
-  color: #08100b;
-  font-size: clamp(10px, calc(var(--b) * 0.3), 13px);
-  font-weight: 900;
-  line-height: 1;
-}
-
-.start-guide-index::before {
-  content: counter(start-guide);
-}
-
-.start-guide li > span:last-child {
-  min-width: 0;
-}
-
-.start-guide strong,
-.start-guide li > span:last-child > span {
-  display: block;
-  min-width: 0;
-}
-
-.start-guide strong {
-  color: var(--text);
-  font-size: clamp(11px, calc(var(--b) * 0.34), 14px);
-  line-height: 1.2;
-}
-
-.start-guide li > span:last-child > span {
-  margin-top: calc(var(--b) * 0.06);
-  color: var(--muted);
-  font-size: clamp(9px, calc(var(--b) * 0.3), 12px);
-  font-weight: 700;
-  line-height: 1.34;
 }
 
 .overlay-action {

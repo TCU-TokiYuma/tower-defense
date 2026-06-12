@@ -106,21 +106,6 @@ const SCREENS = {
   RESULT: "result",
 };
 
-const START_GUIDE_STEPS = [
-  {
-    title: "敵の侵略ルートを確認",
-    body: "画面上部から敵が侵入してきます<br>位置を確認して迎撃の準備をしましょう",
-  },
-  {
-    title: "パーツを配置",
-    body: "下のバッグから反射板や分岐器を盤面へドラッグします<br>置いたパーツはタップで回転します<br>パーツをしまうには敵フィールドにドラッグします",
-  },
-  {
-    title: "強化を選択",
-    body: "レーザーで敵を全て撃退するとステージクリアです<br>強化ボーナスを選択して次のフェーズに備えてください",
-  },
-];
-
 const ENEMY_TYPES = window.FRAME_ENEMY_TYPES ?? [];
 const UPGRADES = window.FRAME_UPGRADES ?? [];
 
@@ -142,7 +127,6 @@ const elements = {
   overlayKicker: document.getElementById("overlay-kicker"),
   overlayTitle: document.getElementById("overlay-title"),
   overlayBody: document.getElementById("overlay-body"),
-  startGuide: document.getElementById("start-guide"),
   overlayAction: document.getElementById("overlay-action"),
   upgradeOptions: document.getElementById("upgrade-options"),
   emitters: Array.from(document.querySelectorAll(".emitter")),
@@ -721,12 +705,11 @@ function resumeGame() {
 
 function showStart() {
   state.screen = SCREENS.START;
-  elements.overlayKicker.textContent = "ローグサバイバル";
-  elements.overlayTitle.textContent = "遊び方";
-  elements.overlayBody.textContent = "宇宙生命体の侵略から地球を守るため、レーザーを反射・分岐させて敵を撃退せよ！";
-  elements.overlayAction.textContent = "防衛開始";
+  elements.overlayKicker.textContent = "屈折防衛";
+  elements.overlayTitle.textContent = "ローグサバイバル";
+  elements.overlayBody.textContent = "反射板と分岐器でレーザー経路を組み替え、敵の侵入を防げ！";
+  elements.overlayAction.textContent = "開始";
   elements.overlayAction.hidden = false;
-  renderStartGuide(true);
   elements.upgradeOptions.innerHTML = "";
   elements.overlay.classList.remove("hidden");
   elements.pause.disabled = true;
@@ -738,7 +721,6 @@ function showPauseOverlay() {
   elements.overlayBody.textContent = `第${state.stage}面 / 得点 ${state.score}`;
   elements.overlayAction.textContent = "再開";
   elements.overlayAction.hidden = false;
-  renderStartGuide(false);
   elements.upgradeOptions.innerHTML = `<dl class="status-list">${getPauseStatusRows()
     .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
     .join("")}</dl>`;
@@ -767,7 +749,6 @@ function showUpgrade() {
   elements.overlayTitle.textContent = "強化を選択";
   elements.overlayBody.textContent = `体力を ${state.clearHeal} 回復しました`;
   elements.overlayAction.hidden = true;
-  renderStartGuide(false);
   elements.upgradeOptions.innerHTML = "";
 
   for (const upgrade of shuffle([...UPGRADES]).slice(0, 3)) {
@@ -829,33 +810,12 @@ function endGame() {
   elements.overlayBody.textContent = `到達面: ${state.stage} / 得点: ${state.score}`;
   elements.overlayAction.textContent = "再挑戦";
   elements.overlayAction.hidden = false;
-  renderStartGuide(false);
   elements.upgradeOptions.innerHTML = "";
   elements.overlay.classList.remove("hidden");
 }
 
 function hideOverlay() {
   elements.overlay.classList.add("hidden");
-}
-
-function renderStartGuide(visible) {
-  elements.startGuide.hidden = !visible;
-  if (!visible) {
-    elements.startGuide.innerHTML = "";
-    return;
-  }
-
-  elements.startGuide.innerHTML = START_GUIDE_STEPS.map(
-    (step) => `
-      <li>
-        <span class="start-guide-index" aria-hidden="true"></span>
-        <span>
-          <strong>${step.title}</strong>
-          <span>${step.body}</span>
-        </span>
-      </li>
-    `,
-  ).join("");
 }
 
 function startBagDrag(event, piece) {
