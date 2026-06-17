@@ -179,10 +179,14 @@ const state = {
   hitEnemyIds: new Set(),
 };
 
+let fullscreenRequestPending = false;
+let fullscreenExitPending = false;
+
 function setup() {
   disableNativeTouchInteractions();
   collectCells();
   bindControls();
+  bindFullscreenEvents();
   resetGameState();
   showStart();
   requestAnimationFrame(loop);
@@ -265,6 +269,13 @@ function bindControls() {
   window.addEventListener("pointercancel", handleDragCancel);
 }
 
+function bindFullscreenEvents() {
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+  document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+  document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+}
+
 function loop(now) {
   const dt = Math.min((now - state.lastTime) / 1000, 0.05);
   state.lastTime = now;
@@ -304,6 +315,7 @@ function startGame() {
   elements.pause.textContent = "一時停止";
   elements.pause.disabled = false;
   hideOverlay();
+  requestGameFullscreen();
 }
 
 function resetGameState() {
@@ -707,16 +719,98 @@ function updateHud() {
   elements.pause.disabled = state.screen !== SCREENS.PLAY;
 }
 
-function pauseGame() {
+function getFullscreenElement() {
+  return (
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement ||
+    null
+  );
+}
+
+function getFullscreenRequest(target) {
+  return (
+    target.requestFullscreen ||
+    target.webkitRequestFullscreen ||
+    target.mozRequestFullScreen ||
+    target.msRequestFullscreen ||
+    null
+  );
+}
+
+function getFullscreenExit() {
+  return (
+    document.exitFullscreen ||
+    document.webkitExitFullscreen ||
+    document.mozCancelFullScreen ||
+    document.msExitFullscreen ||
+    null
+  );
+}
+
+function runFullscreenOperation(operation, onSettled) {
+  try {
+    const result = operation();
+    Promise.resolve(result).then(onSettled, onSettled);
+  } catch {
+    onSettled();
+  }
+}
+
+function isActiveGameplay() {
+  return state.screen === SCREENS.PLAY && !state.paused;
+}
+
+function requestGameFullscreen() {
+  if (!isActiveGameplay() || getFullscreenElement() || fullscreenRequestPending) return;
+
+  const target = document.documentElement;
+  const requestFullscreen = getFullscreenRequest(target);
+  if (!requestFullscreen) return;
+
+  fullscreenRequestPending = true;
+  runFullscreenOperation(() => requestFullscreen.call(target), () => {
+    fullscreenRequestPending = false;
+    if (!isActiveGameplay()) {
+      exitGameFullscreen();
+    }
+  });
+}
+
+function exitGameFullscreen() {
+  if (!getFullscreenElement() || fullscreenExitPending) return;
+
+  const exitFullscreen = getFullscreenExit();
+  if (!exitFullscreen) return;
+
+  fullscreenExitPending = true;
+  runFullscreenOperation(() => exitFullscreen.call(document), () => {
+    fullscreenExitPending = false;
+  });
+}
+
+function handleFullscreenChange() {
+  if (!getFullscreenElement() && isActiveGameplay() && !fullscreenExitPending) {
+    pauseGame({ skipFullscreenExit: true });
+  }
+}
+
+function pauseGame(options = {}) {
+  const { skipFullscreenExit = false } = options;
   state.paused = true;
   elements.pause.textContent = "再開";
   showPauseOverlay();
+  if (!skipFullscreenExit) {
+    exitGameFullscreen();
+  }
 }
 
 function resumeGame() {
   state.paused = false;
   elements.pause.textContent = "一時停止";
   hideOverlay();
+  requestGameFullscreen();
 }
 
 function showStart() {
@@ -730,6 +824,7 @@ function showStart() {
   elements.upgradeOptions.innerHTML = "";
   elements.overlay.classList.remove("hidden");
   elements.pause.disabled = true;
+  exitGameFullscreen();
 }
 
 function showPauseOverlay() {
@@ -763,6 +858,7 @@ function showUpgrade() {
   state.screen = SCREENS.UPGRADE;
   state.paused = false;
   elements.pause.textContent = "一時停止";
+  exitGameFullscreen();
   elements.overlayKicker.textContent = "ステージクリア";
   elements.overlayTitle.textContent = "強化を選択";
   elements.overlayBody.textContent = `体力を ${state.clearHeal} 回復しました`;
@@ -786,7 +882,9 @@ function showUpgrade() {
       renderBag();
       startStage(state.stage + 1);
       state.screen = SCREENS.PLAY;
+      elements.pause.disabled = false;
       hideOverlay();
+      requestGameFullscreen();
     });
     elements.upgradeOptions.appendChild(button);
   }
@@ -824,6 +922,7 @@ function endGame() {
   state.screen = SCREENS.RESULT;
   state.paused = false;
   elements.pause.textContent = "一時停止";
+  exitGameFullscreen();
   elements.overlayKicker.textContent = "リザルト";
   elements.overlayTitle.textContent = "防衛終了";
   elements.overlayBody.textContent = `到達面: ${state.stage} / 得点: ${state.score}`;
